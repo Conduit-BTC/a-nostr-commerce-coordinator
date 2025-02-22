@@ -1,11 +1,14 @@
 {
   "name": "a-commerce-coordinator",
   "module": "index.ts",
-  "type": "module",
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "^1.2.2"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "type": "module",
+  "dependencies": {
+    "zod": "^3.24.2"
   }
 }
