@@ -1,3 +1,4 @@
+import getDb from "@/utils/dbService";
 import { getNdk } from "@/utils/ndkService";
 import { NostrEventQueue, type QueueEvent } from "@/utils/nostrEventQueue";
 import { validateOrderEvent } from "@/utils/zod/nostrOrderSchema";
@@ -70,11 +71,12 @@ export default async function subscribeOrders() {
         // TODO: Index as an array of IDs to check against.
         // TODO: Also index an array of fulfilled Order IDs,
 
-        const order = testOrder;
-        // TODO: const order = await db.get(event.id)
+        const db = getDb();
+        const order = db.get(`nostr-order-event:${event.id}`);
 
         if (order) return; // If event already exists in the database, skip processing
 
+        console.log(`[subscribeOrders]: Adding event to queue: ${event.id}`)
         const serializedEvent = serializeNDKEvent(event);
         queue.push(serializedEvent);
     })
@@ -98,10 +100,11 @@ export default async function subscribeOrders() {
             }
 
             // TODO: Process the order
-            const processOrderEventResult = await newOrderEventWorkflow(container).run({ input: { validatedOrderEvent: order.data, orderNdkEvent: serializeNDKEvent(event) as NDKEvent } })
+            const processOrderResult = await processOrder({ orderEvent: order.data, orderNdkEvent: serializeNDKEvent(event) as NDKEvent })
 
-            if (!processOrderEventResult.success) {
-                console.error(`[subscribeOrders]: Failed to process order event: ${processOrderEventResult.message}`)
+            if (!processOrderResult?.success) {
+                console.error(`[subscribeOrders]: Failed to process order event: ${processOrderResult.message}`)
+                // TODO: Add to a special queue for failed events
                 queue.requeueEvent(queueEvent.id)
                 return;
             }
@@ -112,6 +115,7 @@ export default async function subscribeOrders() {
             }
         } catch (error) {
             console.error(`[subscribeOrders]: Failed to process order event: ${error}`)
+
             queue.requeueEvent(queueEvent.id)
             return;
         }
