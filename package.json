@@ -5,10 +5,10 @@
     "dev": "bun --watch ./src/main.ts"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.2"
+    "@types/bun": "^1.2.3"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.7.3"
   },
   "type": "module",
   "dependencies": {

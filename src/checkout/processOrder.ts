@@ -2,7 +2,7 @@ const storeOrderEventStep = createStep(
     "store-order-event",
     async function (orderNdkEvent: NDKEvent, { container }) {
         try {
-            logger.info("[new-order-event.ts]: Storing order event...");
+            console.info("[processOrder]: Storing order event...");
             const nostrEventsModuleService: NostrEventsModuleService = container.resolve(NOSTR_EVENTS_MODULE);
             const eventData = {
                 id: orderNdkEvent.id,
@@ -14,10 +14,10 @@ const storeOrderEventStep = createStep(
                 sig: orderNdkEvent.sig,
             };
             const storedEvent = await nostrEventsModuleService.createOrderNostrEvents(eventData);
-            logger.info(`[new-order-event.ts]: New order event stored: ${storedEvent.id}`);
+            console.info(`[processOrder]: New order event stored: ${storedEvent.id}`);
             return new StepResponse();
         } catch (error) {
-            logger.error(`[new-order-event.ts]: Failed to store order event: ${error}`);
+            console.error(`[processOrder]: Failed to store order event: ${error}`);
             throw error;
         }
     }
@@ -33,7 +33,7 @@ const determineMessageTypeStep = createStep(
                 messageType: subject,
             });
         } catch (error) {
-            logger.error(`[new-order-event.ts]: Failed to determine message type: ${error}`);
+            console.error(`[processOrder]: Failed to determine message type: ${error}`);
             throw error;
         }
     }
@@ -104,16 +104,16 @@ const createCartStep = createStep(
                     postal_code: address.zip,
                 };
             }
-            logger.info(`[orderSubscriptionLoader]: Creating cart for order...`)
+            console.info(`[orderSubscriptionLoader]: Creating cart for order...`)
             const cart = await createCartWorkflow(container).run({ input })
 
-            logger.info(`[orderSubscriptionLoader]: Cart created: ${cart}`)
+            console.info(`[orderSubscriptionLoader]: Cart created: ${cart}`)
 
             return new StepResponse({
                 cart,
             });
         } catch (error) {
-            logger.error(`[new-order-event.ts]: Failed to create cart: ${error}`);
+            console.error(`[processOrder]: Failed to create cart: ${error}`);
             throw error;
         }
     }
@@ -149,7 +149,7 @@ const newOrderEventWorkflow = createWorkflow(
                 message: "Order is stored in the database",
             });
         } catch (error) {
-            logger.error("Product sync workflow failed:", error);
+            console.error("Product sync workflow failed:", error);
             throw error;
         }
     }

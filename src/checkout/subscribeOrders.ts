@@ -63,6 +63,7 @@ export default async function subscribeOrders() {
     const signer = new NDKPrivateKeySigner(privkey);
 
     subscription.on('event', async (event: NDKEvent) => {
+        console.log(`[subscribeOrders]: Received event: ${event.id}`)
         // When the subscription starts, it will fetch all NIP-17 events for the Merchant npub across the Relay Pool, check them against a list of known irrelevant event IDs, as well as a list of already-processed orders. If the event ID is unique, then it will be added to the queue for processing.
 
         // TODO: Add a table of non-Order NIP-17 events to ignore early; currently only Order events are stored, meaning a whole load of repeated validation takes place for non-Order events
