@@ -1,0 +1,89 @@
+import getDb from "@/utils/dbService";
+import { getNdk } from "@/utils/ndkService";
+import { NostrEventQueue, QUEUE_EVENT_STATUS, type QueueEvent } from "@/utils/nostrEventQueue";
+import serializeNDKEvent from "@/utils/serializeNdkEvent";
+import { validateOrderEvent, type OrderEvent } from "@/utils/zod/nostrOrderSchema";
+import { NDKEvent, NDKPrivateKeySigner, NDKUser, type NDKFilter, type NDKKind, type NostrEvent } from "@nostr-dev-kit/ndk";
+import processOrder from "./processOrder";
+
+const pendingOrdersQueue = new NostrEventQueue(orderQueueEventHandler);
+const failedOrdersQueue = new NostrEventQueue(failedOrderQueueEventHandler, QUEUE_EVENT_STATUS.FAILED);
+
+const orderDb = getDb().openDB({ name: 'nostr-order-events' });
+const ignoredEventsDb = getDb().openDB({ name: 'nostr-ignored-events' });
+
+const pubkey = process.env.PUBKEY
+const privkey = process.env.PRIVKEY
+const signer = new NDKPrivateKeySigner(privkey);
+
+const ndk = await getNdk();
+
+export default async function subscribeOrders() {
+    console.log(`[subscribeOrders]: Listening to Relay Pool for NIP-17 DMs addressed to ${pubkey}...`)
+
+    // Set up subscription filter for NIP-17 DMs
+    const filter: NDKFilter = {
+        kinds: [1059 as NDKKind],
+        '#p': [pubkey!]
+    }
+
+    const subscription = ndk.subscribe(filter, { closeOnEose: false })
+
+    subscription.on('event', async (event: NDKEvent) => {
+        console.log(`[subscribeOrders]: Received NIP-17 encrypted message: ${event.id}`)
+        // When the subscription starts, it will fetch all NIP-17 events for the Merchant npub across the Relay Pool, check them against a list of known irrelevant event IDs, as well as a list of already-processed orders. If the event ID is unique, then it will be added to the queue for processing.
+
+        // TODO: Add a table of non-Order NIP-17 events to ignore early; currently only Order events are stored, meaning a whole load of repeated validation takes place for non-Order events
+        // TODO: Index as an array of IDs to check against.
+        // TODO: Also index an array of fulfilled Order IDs,
+
+        const ignored = ignoredEventsDb.get(`nostr-order-event:${event.id}`);
+        if (ignored) return; // If event has been encountered before, but isn't an actual order, skip processing
+
+        const order = orderDb.get(`nostr-order-event:${event.id}`);
+        if (order) return; // If event already exists in the database, skip processing
+
+        console.log(`[subscribeOrders]: Adding order event to queue: ${event.id}`)
+        const serializedEvent = event.rawEvent()
+        pendingOrdersQueue.push(serializedEvent);
+    })
+}
+
+async function orderQueueEventHandler(queueEvent: QueueEvent) {
+    // Events added to the queue haven't been encountered by the Coordinator before. If they are not valid orders, they will be added to the ignore list. Otherwise, they will be processed.
+    const event = queueEvent.data;
+    try {
+        // NIP-17 Decryption + Validation
+        const seal: string = await signer.decrypt(new NDKUser({ pubkey: event.pubkey }), event.content)
+        const sealJson = JSON.parse(seal)
+        const rumor: string = await signer.decrypt(new NDKUser({ pubkey: sealJson.pubkey }), sealJson.content)
+        const rumorJson: NDKEvent = JSON.parse(rumor)
+        const order = validateOrderEvent(rumorJson)
+
+        if (!order.success) {
+            // We've determined this is not a valid order event, so we can clear it from the queue and ignore it in the future
+            pendingOrdersQueue.confirmProcessed(queueEvent.id);
+            ignoredEventsDb.put(`nostr-order-event:${event.id}`, true)
+            return;
+        }
+
+        // TODO: Check order-id against all Receipt events, and if it's already been processed, ignore it in the future. An order may make it this far if the database was previously wiped, or some orders have been processed outside of the Coorindator.
+
+        const processOrderResult = await processOrder({ orderEvent: order.data, orderNdkEvent: serializeNDKEvent(event) as NDKEvent })
+
+        if (!processOrderResult?.success) throw new Error(processOrderResult.messageToCustomer)
+
+        pendingOrdersQueue.confirmProcessed(queueEvent.id)
+        orderDb.put(`nostr-order-event:${event.id}`, event)
+
+        console.info(`[subscribeOrders]: Order processed: ${event.id}`)
+    } catch (error) {
+        console.error(`[subscribeOrders]: Failed to process order event: ${error}`)
+
+        pendingOrdersQueue.confirmProcessed(queueEvent.id);
+        failedOrdersQueue.push(event)
+        return;
+    }
+}
+
+async function failedOrderQueueEventHandler() { }
