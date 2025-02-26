@@ -5,12 +5,13 @@ import serializeNDKEvent from "@/utils/serializeNdkEvent";
 import { validateOrderEvent, type OrderEvent } from "@/utils/zod/nostrOrderSchema";
 import { NDKEvent, NDKPrivateKeySigner, NDKUser, type NDKFilter, type NDKKind, type NostrEvent } from "@nostr-dev-kit/ndk";
 import processOrder from "./processOrder";
+import { IGNORED_EVENTS_DB_NAME, ORDER_EVENTS_DB_NAME } from "@/utils/constants";
 
 const pendingOrdersQueue = new NostrEventQueue(orderQueueEventHandler);
 const failedOrdersQueue = new NostrEventQueue(failedOrderQueueEventHandler, QUEUE_EVENT_STATUS.FAILED);
 
-const orderDb = getDb().openDB({ name: 'nostr-order-events' });
-const ignoredEventsDb = getDb().openDB({ name: 'nostr-ignored-events' });
+const orderDb = getDb().openDB({ name: ORDER_EVENTS_DB_NAME });
+const ignoredEventsDb = getDb().openDB({ name: IGNORED_EVENTS_DB_NAME });
 
 const pubkey = process.env.PUBKEY
 const privkey = process.env.PRIVKEY
@@ -69,7 +70,7 @@ async function orderQueueEventHandler(queueEvent: QueueEvent) {
 
         // TODO: Check order-id against all Receipt events, and if it's already been processed, ignore it in the future. An order may make it this far if the database was previously wiped, or some orders have been processed outside of the Coorindator.
 
-        const processOrderResult = await processOrder({ orderEvent: order.data, orderNdkEvent: serializeNDKEvent(event) as NDKEvent })
+        const processOrderResult = await processOrder(order.data)
 
         if (!processOrderResult?.success) throw new Error(processOrderResult.messageToCustomer)
 

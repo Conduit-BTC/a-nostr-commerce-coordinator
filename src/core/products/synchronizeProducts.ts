@@ -1,4 +1,4 @@
-import { DEFAULT_RELAYS } from "@/utils/constants";
+import { DEFAULT_RELAYS, PRODUCT_EVENTS_DB_NAME } from "@/utils/constants";
 import getDb from "@/services/dbService";
 import { getNdk } from "@/services/ndkService";
 import serializeNDKEvent from "@/utils/serializeNdkEvent";
@@ -29,7 +29,7 @@ export default async function synchronizeProducts() {
 
     const homeRelaySubscription = ndk.subscribe(filter, { closeOnEose: false }, new NDKRelaySet(new Set([homeRelay]), ndk));
 
-    const productsDb = getDb().openDB({ name: "nostr-product-events" });
+    const productsDb = getDb().openDB({ name: PRODUCT_EVENTS_DB_NAME });
 
     console.log("[synchronizeProducts]: Clearing out the product events database...");
     productsDb.clearSync(); // Clear out the DB, get ready for a fresh sync
