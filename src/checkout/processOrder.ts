@@ -6,6 +6,59 @@ type ValidateOrderResponse = {
     messageToCustomer: string,
 }
 
+enum PAYMENT_STATUS {
+    REQUESTED,
+    PARTIAL,
+    PAID,
+    EXPIRED,
+    ERROR
+}
+
+enum FULFILLMENT_STATUS {
+    PROCESSING,
+    COMPLETE,
+    ERROR
+}
+
+const testOrder = {
+    paymentStatus: PAYMENT_STATUS.PAID,
+    fulfillmentStatus: FULFILLMENT_STATUS.COMPLETE
+}
+
+type ProcessOrderArgs = {
+    orderEvent: OrderEvent,
+    orderNdkEvent: NDKEvent,
+}
+
+type ProcessOrderResponse = {
+    success: boolean,
+    messageToCustomer: string,
+}
+
+export default async function processOrder(input: ProcessOrderArgs): Promise<ProcessOrderResponse> {
+    console.log("[processOrder]: Processing order...")
+    return { success: false, messageToCustomer: "processOrder isn't implemented yet!" };
+    // try {
+    //     const { orderEvent } = input;
+    //     const validateOrderResponse = await validateOrder(orderEvent);
+    //     if (validateOrderResponse.success === false) {
+    //         return {
+    //             success: false,
+    //             messageToCustomer: validateOrderResponse.messageToCustomer,
+    //         };
+    //     }
+
+    //     return {
+    //         success: true,
+    //         messageToCustomer: "Order successfully processed",
+    //     };
+    // } catch (error) {
+    //     console.error("Product sync workflow failed:", error);
+    //     return { success: false, messageToCustomer: "Order processing failed. Contact Merchant." };
+    // }
+}
+
+
 async function validateOrder(orderEvent: OrderEvent): Promise<ValidateOrderResponse> {
     return { success: false, messageToCustomer: "Order didn't pass validation" };
 
@@ -102,36 +155,3 @@ async function validateOrder(orderEvent: OrderEvent): Promise<ValidateOrderRespo
     //     console.error(`[processOrder]: Failed to create cart: ${error}`);
     //     throw error;
 }
-
-type ProcessOrderArgs = {
-    orderEvent: OrderEvent,
-    orderNdkEvent: NDKEvent,
-}
-
-type ProcessOrderResponse = {
-    success: boolean,
-    messageToCustomer: string,
-}
-
-async function processOrder(input: ProcessOrderArgs): Promise<ProcessOrderResponse> {
-    try {
-        const { orderEvent } = input;
-        const validateOrderResponse = await validateOrder(orderEvent);
-        if (validateOrderResponse.success === false) {
-            return {
-                success: false,
-                messageToCustomer: validateOrderResponse.messageToCustomer,
-            };
-        }
-
-        return {
-            success: true,
-            messageToCustomer: "Order successfully processed",
-        };
-    } catch (error) {
-        console.error("Product sync workflow failed:", error);
-        return { success: false, messageToCustomer: "Order processing failed. Contact Merchant." };
-    }
-}
-
-export default processOrder;

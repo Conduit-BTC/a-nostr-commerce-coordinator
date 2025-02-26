@@ -1,3 +1,3 @@
 import startup from "./utils/startup";
 
-startup();
+await startup();

@@ -22,21 +22,21 @@ export default async function synchronizeProducts() {
     const relayPool: NDKRelay[] = [];
 
     if (DEFAULT_RELAYS.length > 1) {
-        for (let i = 1; DEFAULT_RELAYS.length; i++) {
+        for (let i = 0; i < DEFAULT_RELAYS.length; i++) {
             relayPool.push(new NDKRelay(DEFAULT_RELAYS[i], undefined, ndk));
         }
     }
 
     const homeRelaySubscription = ndk.subscribe(filter, { closeOnEose: false }, new NDKRelaySet(new Set([homeRelay]), ndk));
 
-    const db = getDb();
-    const productsDb = db.openDB({ name: "nostr-product-events" });
+    const productsDb = getDb().openDB({ name: "nostr-product-events" });
 
     console.log("[synchronizeProducts]: Clearing out the product events database...");
     productsDb.clearSync(); // Clear out the DB, get ready for a fresh sync
     console.log("[synchronizeProducts]: Product events database cleared");
 
     homeRelaySubscription.on('event', async (event: NDKEvent) => {
+        // This subscription stays open for the lifetime of the application
         console.log(`[synchronizeProducts]: Received Product event from HomeRelay: ${event.id}`)
 
         const product = serializeNDKEvent(event);
@@ -70,8 +70,15 @@ export default async function synchronizeProducts() {
         console.log("[synchronizeProducts]: Product event broadcasted to relay pool");
     })
 
-    homeRelaySubscription.on("eose", () => {
-        console.log("[synchronizeProducts]: Product sync complete!");
+    await new Promise<void>((resolve) => {
+        homeRelaySubscription.on("eose", () => {
+            console.log("[synchronizeProducts]: All events from HomeRelay received. Finishing up...");
+            homeRelaySubscription.off("eose", () => { });
+            resolve();
+        })
     })
 
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Arbitrary timeout to complete the sync
+
+    console.log("[synchronizeProducts]: Initial product sync complete!");
 }
