@@ -43,8 +43,8 @@ export class NDKService {
                 }
             };
 
-            this.ndk!.pool.on('connect', () => {
-                console.log(`[NDK] Connected to relay`);
+            this.ndk!.pool.on('relay:connect', (a) => {
+                console.log(`[NDK] Connected to relay: ${a.url}`);
                 checkConnection();
             });
 

@@ -6,7 +6,7 @@ class LMDBInstance {
 
     private constructor() {
         this.db = open({
-            path: '../../database',
+            path: 'database/',
             maxReaders: 100,
             mapSize: 2 * 1024 * 1024 * 1024, // 2GB
         });

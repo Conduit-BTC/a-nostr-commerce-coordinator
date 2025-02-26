@@ -1,6 +1,7 @@
 import getDb from "@/utils/dbService";
 import { getNdk } from "@/utils/ndkService";
 import { NostrEventQueue, type QueueEvent } from "@/utils/nostrEventQueue";
+import serializeNDKEvent from "@/utils/serializeNdkEvent";
 import { validateOrderEvent } from "@/utils/zod/nostrOrderSchema";
 import { NDKEvent, NDKPrivateKeySigner, NDKUser, type NDKFilter, type NDKKind } from "@nostr-dev-kit/ndk";
 
@@ -23,48 +24,29 @@ const testOrder = {
     fulfillmentStatus: FULFILLMENT_STATUS.COMPLETE
 }
 
-function serializeNDKEvent(event: NDKEvent) {
-    return {
-        id: event.id,
-        pubkey: event.pubkey,
-        created_at: event.created_at,
-        kind: event.kind,
-        content: event.content,
-        tags: event.tags,
-        sig: event.sig
-    };
-}
-
 export default async function subscribeOrders() {
     console.log("[subscribeOrders]: Subscribing to orders...");
 
     const queue = new NostrEventQueue();
 
-    const relayUrl = 'ws://localhost:7777'
     const pubkey = process.env.PUBKEY
     const privkey = process.env.PRIVKEY
 
-    if (!pubkey || !privkey) {
-        console.error(`[subscribeOrders]: PUBKEY or PRIVKEY not found in .env`)
-        return
-    }
-
     const ndk = await getNdk();
 
-    console.log(`[subscribeOrders]: Listening to ${relayUrl} for NIP-17 DMs addressed to ${pubkey}`)
+    console.log(`[subscribeOrders]: Listening to Relay Pool for NIP-17 DMs addressed to ${pubkey}...`)
 
     // Set up subscription filter for NIP-17 DMs
     const filter: NDKFilter = {
         kinds: [1059 as NDKKind],
-        '#p': [pubkey]
+        '#p': [pubkey!]
     }
 
-    // Subscribe to events
     const subscription = ndk.subscribe(filter, { closeOnEose: false })
     const signer = new NDKPrivateKeySigner(privkey);
 
     subscription.on('event', async (event: NDKEvent) => {
-        console.log(`[subscribeOrders]: Received event: ${event.id}`)
+        console.log(`[subscribeOrders]: Received NIP-17 encrypted message: ${event.id}`)
         // When the subscription starts, it will fetch all NIP-17 events for the Merchant npub across the Relay Pool, check them against a list of known irrelevant event IDs, as well as a list of already-processed orders. If the event ID is unique, then it will be added to the queue for processing.
 
         // TODO: Add a table of non-Order NIP-17 events to ignore early; currently only Order events are stored, meaning a whole load of repeated validation takes place for non-Order events
