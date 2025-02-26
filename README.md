@@ -1,6 +1,6 @@
 ⚠️ This project is under heavy development - Clone and tinker, or wait for release ⚠️
 
-# A Commerce Coordinator - a Nostr Daemon for Rockstar Merchants
+# A Nostr Commerce Coordinator - Nostr Daemon for Merchant Rockstars
 
 THIS IS A WORK IN PROGRESS > Subscribe to our newsletter for updates about Conduit BTC, the C3 system, our in-development Nostr E-Commerce client, and more - The Conduit Signal
 Learn more about NCCs by reading their debut article: Nostr E-Commerce - Benefits, Shortcomings, and The Case for Coordinators
