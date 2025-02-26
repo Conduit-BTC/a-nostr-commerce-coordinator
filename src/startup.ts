@@ -1,5 +1,5 @@
-import subscribeOrders from "@/checkout/subscribeOrders";
-import synchronizeProducts from "@/products/synchronizeProducts";
+import subscribeOrders from "@/core/checkout/subscribeOrders";
+import synchronizeProducts from "@/core/products/synchronizeProducts";
 
 function verifyEnvVars(): void {
     if (!process.env.PUBKEY || !process.env.PRIVKEY) { throw new Error(`[subscribeOrders]: PUBKEY or PRIVKEY not found in .env`) }

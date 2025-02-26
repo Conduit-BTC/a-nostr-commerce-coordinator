@@ -1,6 +1,6 @@
-import getDb from "@/utils/dbService";
-import { getNdk } from "@/utils/ndkService";
-import { NostrEventQueue, QUEUE_EVENT_STATUS, type QueueEvent } from "@/utils/nostrEventQueue";
+import getDb from "@/services/dbService";
+import { getNdk } from "@/services/ndkService";
+import { NostrEventQueue, QUEUE_EVENT_STATUS, type QueueEvent } from "@/services/nostrEventQueue";
 import serializeNDKEvent from "@/utils/serializeNdkEvent";
 import { validateOrderEvent, type OrderEvent } from "@/utils/zod/nostrOrderSchema";
 import { NDKEvent, NDKPrivateKeySigner, NDKUser, type NDKFilter, type NDKKind, type NostrEvent } from "@nostr-dev-kit/ndk";

@@ -1,6 +1,6 @@
 import { DEFAULT_RELAYS } from "@/utils/constants";
-import getDb from "@/utils/dbService";
-import { getNdk } from "@/utils/ndkService";
+import getDb from "@/services/dbService";
+import { getNdk } from "@/services/ndkService";
 import serializeNDKEvent from "@/utils/serializeNdkEvent";
 import { NDKRelay, NDKRelaySet, type NDKEvent, type NDKFilter, type NDKKind } from "@nostr-dev-kit/ndk";
 
