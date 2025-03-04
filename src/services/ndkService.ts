@@ -1,9 +1,15 @@
 import { DEFAULT_RELAYS } from "@/utils/constants";
-import NDK, { NDKPrivateKeySigner } from "@nostr-dev-kit/ndk";
+import NDK, { NDKPrivateKeySigner, NDKRelay, NDKRelaySet } from "@nostr-dev-kit/ndk";
 
 export class NDKService {
     private static instance: NDKService | null = null;
     private ndk: NDK | null = null;
+
+    // TODO: The "Home Relay" system is currently too-strongly centralized, which is against the ethos, and isn't yet resilient. This is a quick-and-dirty implementation. Create a better relay management system.
+
+    private homeRelay: NDKRelay | null = null;
+    private homeRelaySet: NDKRelaySet | null = null;
+    private relayPool: NDKRelaySet | null = null;
 
     private constructor() {
         // Private constructor to prevent direct construction calls with 'new'
@@ -12,6 +18,21 @@ export class NDKService {
     public static getInstance(): NDKService {
         if (!NDKService.instance) NDKService.instance = new NDKService();
         return NDKService.instance;
+    }
+
+    public getHomeRelay(): NDKRelay {
+        if (!this.homeRelay) throw new Error("Home relay not initialized");
+        return this.homeRelay;
+    }
+
+    public getHomeRelaySet(): NDKRelaySet {
+        if (!this.homeRelaySet) throw new Error("Home relay set not initialized");
+        return this.homeRelaySet;
+    }
+
+    public getRelayPool(): NDKRelaySet {
+        if (!this.relayPool) throw new Error("Relay pool not initialized");
+        return this.relayPool;
     }
 
     public initialize(relayPool: string[]): Promise<NDK> {
@@ -26,6 +47,18 @@ export class NDKService {
             explicitRelayUrls: relayPool,
             signer,
         });
+
+        this.homeRelay = new NDKRelay(DEFAULT_RELAYS[0], undefined, this.ndk);
+        this.homeRelaySet = new NDKRelaySet(new Set([this.homeRelay]), this.ndk)
+        const relays: NDKRelay[] = [this.homeRelay];
+
+        if (DEFAULT_RELAYS.length > 1) {
+            for (let i = 1; i < DEFAULT_RELAYS.length; i++) {
+                relays.push(new NDKRelay(DEFAULT_RELAYS[i], undefined, this.ndk));
+            }
+        }
+
+        this.relayPool = new NDKRelaySet(new Set([this.homeRelay, ...relays]), this.ndk);
 
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
@@ -65,4 +98,19 @@ export class NDKService {
 export async function getNdk(relayPool: string[] = DEFAULT_RELAYS): Promise<NDK> {
     const service = NDKService.getInstance();
     return await service.initialize(relayPool);
+}
+
+export async function getHomeRelay(): Promise<NDKRelay> {
+    const service = NDKService.getInstance();
+    return service.getHomeRelay();
+}
+
+export async function getHomeRelaySet(): Promise<NDKRelaySet> {
+    const service = NDKService.getInstance();
+    return service.getHomeRelaySet();
+}
+
+export async function getRelayPool(): Promise<NDKRelaySet> {
+    const service = NDKService.getInstance();
+    return service.getRelayPool();
 }

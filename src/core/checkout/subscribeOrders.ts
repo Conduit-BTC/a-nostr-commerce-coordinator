@@ -1,11 +1,10 @@
 import getDb from "@/services/dbService";
 import { getNdk } from "@/services/ndkService";
 import { NostrEventQueue, QUEUE_EVENT_STATUS, type QueueEvent } from "@/services/nostrEventQueue";
-import serializeNDKEvent from "@/utils/serializeNdkEvent";
-import { validateOrderEvent, type OrderEvent } from "@/utils/zod/nostrOrderSchema";
-import { NDKEvent, NDKPrivateKeySigner, NDKUser, type NDKFilter, type NDKKind, type NostrEvent } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKPrivateKeySigner, NDKUser } from "@nostr-dev-kit/ndk";
 import processOrder from "./processOrder";
-import { IGNORED_EVENTS_DB_NAME, ORDER_EVENTS_DB_NAME } from "@/utils/constants";
+import { IGNORED_EVENTS_DB_NAME, merchantMessagesFilter, ORDER_EVENTS_DB_NAME } from "@/utils/constants";
+import { validateOrder } from "nostr-commerce-schema"
 
 const pendingOrdersQueue = new NostrEventQueue(orderQueueEventHandler);
 const failedOrdersQueue = new NostrEventQueue(failedOrderQueueEventHandler, QUEUE_EVENT_STATUS.FAILED);
@@ -23,10 +22,7 @@ export default async function subscribeOrders() {
     console.log(`[subscribeOrders]: Listening to Relay Pool for NIP-17 DMs addressed to ${pubkey}...`)
 
     // Set up subscription filter for NIP-17 DMs
-    const filter: NDKFilter = {
-        kinds: [1059 as NDKKind],
-        '#p': [pubkey!]
-    }
+    const filter = merchantMessagesFilter;
 
     const subscription = ndk.subscribe(filter, { closeOnEose: false })
 
@@ -39,6 +35,7 @@ export default async function subscribeOrders() {
         // TODO: Also index an array of fulfilled Order IDs,
 
         const ignored = ignoredEventsDb.get(`nostr-order-event:${event.id}`);
+        ignoredEventsDb.getKeys().forEach(key => console.log(key))
         if (ignored) return; // If event has been encountered before, but isn't an actual order, skip processing
 
         const order = orderDb.get(`nostr-order-event:${event.id}`);
@@ -54,17 +51,20 @@ async function orderQueueEventHandler(queueEvent: QueueEvent) {
     // Events added to the queue haven't been encountered by the Coordinator before. If they are not valid orders, they will be added to the ignore list. Otherwise, they will be processed.
     const event = queueEvent.data;
     try {
+        console.log("[subscribeOrders]: Processing order event...")
         // NIP-17 Decryption + Validation
         const seal: string = await signer.decrypt(new NDKUser({ pubkey: event.pubkey }), event.content)
         const sealJson = JSON.parse(seal)
         const rumor: string = await signer.decrypt(new NDKUser({ pubkey: sealJson.pubkey }), sealJson.content)
         const rumorJson: NDKEvent = JSON.parse(rumor)
-        const order = validateOrderEvent(rumorJson)
+        const order = validateOrder(rumorJson)
+        console.log(`[subscribeOrders]: Order event: ${JSON.stringify(rumorJson)}`)
 
         if (!order.success) {
+            console.log(`[subscribeOrders]: Order event failed validation: ${order}`)
             // We've determined this is not a valid order event, so we can clear it from the queue and ignore it in the future
             pendingOrdersQueue.confirmProcessed(queueEvent.id);
-            ignoredEventsDb.put(`nostr-order-event:${event.id}`, true)
+            // ignoredEventsDb.put(`nostr-order-event:${event.id}`, true)
             return;
         }
 

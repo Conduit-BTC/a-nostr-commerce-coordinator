@@ -1,0 +1,3 @@
+export enum CHECKOUT_ERROR {
+    PRODUCT_MISSING
+}

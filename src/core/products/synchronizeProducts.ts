@@ -1,7 +1,6 @@
-import { DEFAULT_RELAYS, PRODUCT_EVENTS_DB_NAME } from "@/utils/constants";
+import { DEFAULT_RELAYS, merchantProductsFilter, PRODUCT_EVENTS_DB_NAME } from "@/utils/constants";
 import getDb from "@/services/dbService";
-import { getNdk } from "@/services/ndkService";
-import serializeNDKEvent from "@/utils/serializeNdkEvent";
+import { getHomeRelay, getHomeRelaySet, getNdk, getRelayPool } from "@/services/ndkService";
 import { NDKRelay, NDKRelaySet, type NDKEvent, type NDKFilter, type NDKKind } from "@nostr-dev-kit/ndk";
 
 export default async function synchronizeProducts() {
@@ -9,25 +8,12 @@ export default async function synchronizeProducts() {
 
     const pubkey = process.env.PUBKEY;
 
-    const filter: NDKFilter = {
-        kinds: [30018 as NDKKind, 30402 as NDKKind],
-        '#p': [pubkey!]
-    }
+    const filter = merchantProductsFilter;
 
     const ndk = await getNdk();
 
-    // TODO: The "Home Relay" system is currently too-strongly centralized, which is against the ethos, and isn't yet resilient. This is a quick-and-dirty implementation. Create a better relay management system.
-
-    const homeRelay: NDKRelay = new NDKRelay(DEFAULT_RELAYS[0], undefined, ndk);
-    const relayPool: NDKRelay[] = [];
-
-    if (DEFAULT_RELAYS.length > 1) {
-        for (let i = 0; i < DEFAULT_RELAYS.length; i++) {
-            relayPool.push(new NDKRelay(DEFAULT_RELAYS[i], undefined, ndk));
-        }
-    }
-
-    const homeRelaySubscription = ndk.subscribe(filter, { closeOnEose: false }, new NDKRelaySet(new Set([homeRelay]), ndk));
+    const homeRelaySet = await getHomeRelaySet();
+    const relayPool = await getRelayPool();
 
     const productsDb = getDb().openDB({ name: PRODUCT_EVENTS_DB_NAME });
 
@@ -35,11 +21,13 @@ export default async function synchronizeProducts() {
     productsDb.clearSync(); // Clear out the DB, get ready for a fresh sync
     console.log("[synchronizeProducts]: Product events database cleared");
 
+    const homeRelaySubscription = ndk.subscribe(filter, { closeOnEose: false }, homeRelaySet);
+
     homeRelaySubscription.on('event', async (event: NDKEvent) => {
         // This subscription stays open for the lifetime of the application
         console.log(`[synchronizeProducts]: Received Product event from HomeRelay: ${event.id}`)
 
-        const product = serializeNDKEvent(event);
+        const product = event.rawEvent();
 
         const dTag = product.tags.find(tag => tag[0] === "d") // Constant Product ID
 
@@ -57,13 +45,13 @@ export default async function synchronizeProducts() {
 
         console.log(await productsDb.get(`nostr-product-event:${productId}`))
 
-        if (relayPool.length === 0) {
+        if (relayPool.size === 0) {
             console.warn("[synchronizeProducts]: WARN: No relays in relay pool");
             return;
         }
 
         console.log("[synchronizeProducts]: Broadcasting product event to relay pool...");
-        relayPool.forEach(relay => {
+        relayPool.relays.forEach(relay => {
             console.log(`[synchronizeProducts]: Broadcasting product event to relay: ${relay.url}`);
             relay.publish(event);
         })
