@@ -9,7 +9,7 @@ import { getHomeRelaySet, getRelayPool } from "@/services/ndkService";
 */
 export async function getProduct(productId: string): Promise<ProductListing | null> {
     const productDb = getDb().openDB({ name: PRODUCT_EVENTS_DB_NAME });
-    const productFromDb = await productDb.get(productId);
+    const productFromDb = await productDb.get(`nostr-product-event:${productId}`);
     if (productFromDb) return productFromDb as ProductListing;
 
     const productFromHomeRelay = await fetchProductFromRelaySet(await getHomeRelaySet(), productId);

@@ -51,14 +51,13 @@ async function orderQueueEventHandler(queueEvent: QueueEvent) {
     // Events added to the queue haven't been encountered by the Coordinator before. If they are not valid orders, they will be added to the ignore list. Otherwise, they will be processed.
     const event = queueEvent.data;
     try {
-        console.log("[subscribeOrders]: Processing order event...")
+        console.log("[subscribeOrders]: Processing order event from queue...")
         // NIP-17 Decryption + Validation
         const seal: string = await signer.decrypt(new NDKUser({ pubkey: event.pubkey }), event.content)
         const sealJson = JSON.parse(seal)
         const rumor: string = await signer.decrypt(new NDKUser({ pubkey: sealJson.pubkey }), sealJson.content)
         const rumorJson: NDKEvent = JSON.parse(rumor)
         const order = validateOrder(rumorJson)
-        console.log(`[subscribeOrders]: Order event: ${JSON.stringify(rumorJson)}`)
 
         if (!order.success) {
             console.log(`[subscribeOrders]: Order event failed validation: ${order}`)

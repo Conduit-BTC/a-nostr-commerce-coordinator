@@ -5,8 +5,10 @@ import type { NDKRelaySet } from "@nostr-dev-kit/ndk";
 import { validateProductListing, type ProductListing } from "nostr-commerce-schema";
 
 export default async function fetchProductFromRelaySet(relaySet: NDKRelaySet, productId: string, timeoutMs = 1000): Promise<ProductListing | null> {
+    console.log(`[fetchProductFromRelaySet]: Fetching ${productId} from relay set...`);
+    console.log(`[fetchProductFromRelaySet]: Relay set: ${relaySet.relayUrls}`);
+
     const ndk = await getNdk();
-    console.log("[fetchProductFromRelaySet]: Fetching product from relay set...");
     const filter = getMerchantSpecificProductFilter(productId);
     const subscription = ndk.subscribe(filter, { closeOnEose: false }, relaySet);
 
@@ -34,7 +36,7 @@ export default async function fetchProductFromRelaySet(relaySet: NDKRelaySet, pr
                 resolve(product as unknown as ProductListing);
             }
             console.warn(`[fetchProductFromRelaySet]: Product event ${product.id} failed validation`);
-            return null;
+            reject();
         });
     })
 }

@@ -12,12 +12,12 @@ const pubkey = process.env.PUBKEY;
 
 export const merchantProductsFilter: NDKFilter = {
     kinds: [30402 as NDKKind],
-    '#p': [pubkey!]
+    authors: [pubkey!]
 }
 
 export const getMerchantSpecificProductFilter = (productId: string): NDKFilter => ({
     kinds: [30402 as NDKKind],
-    '#p': [pubkey!],
+    authors: [pubkey!],
     '#d': [productId]
 })
 

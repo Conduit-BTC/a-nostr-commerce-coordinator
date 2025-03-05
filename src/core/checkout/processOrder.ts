@@ -31,7 +31,7 @@ type ValidateOrderResponse = {
     messageToCustomer: string,
 }
 
-type PreInvoiceItem = {
+type TransactionProduct = {
     success: boolean,
     productId?: string,
     quantity?: number,
@@ -44,9 +44,16 @@ type PreInvoiceItem = {
     message?: string,
 }
 
-export default async function processOrder(event: Order): Promise<ProcessOrderResponse> {
-    console.log("[processOrder]: Processing order...")
+type OrderItem = {
+    productRef: string;
+    quantity: number;
+}
 
+type Transaction = {
+    items: TransactionProduct[];
+};
+
+export default async function processOrder(event: Order): Promise<ProcessOrderResponse> {
     try {
         const validateOrderResponse = await verifyNewOrder(event);
         if (!validateOrderResponse.success) {
@@ -66,19 +73,14 @@ export default async function processOrder(event: Order): Promise<ProcessOrderRe
     }
 }
 
-type OrderItem = {
-    productRef: string;
-    quantity: number;
-}
-
 async function verifyNewOrder(event: Order): Promise<ValidateOrderResponse> {
     try {
         console.log("[verifyNewOrder]: Verifying new order...");
         const items: OrderItem[] = OrderUtils.getOrderItems(event);
-        const preInvoiceItems = await prepareItems(items);
+        const transactionItems = await prepareItems(items);
+        const transaction = { items: transactionItems } as Transaction;
 
-        console.log("Items: ", items);
-        console.log("PreInvoiceItems: ", preInvoiceItems);
+        console.log("Transaction:", transaction);
 
 
 
@@ -108,8 +110,8 @@ async function verifyNewOrder(event: Order): Promise<ValidateOrderResponse> {
 
 const preInvoiceStep = async (items: OrderItem[]) => { };
 
-async function prepareItems(orderItems: OrderItem[]): Promise<PreInvoiceItem[]> {
-    const itemPromises: Promise<PreInvoiceItem>[] = orderItems.map(async (item) => {
+async function prepareItems(orderItems: OrderItem[]): Promise<TransactionProduct[]> {
+    const itemPromises: Promise<TransactionProduct>[] = orderItems.map(async (item) => {
         const productId = OrderUtils.getProductIdFromOrderItem(item);
         const product = await getProduct(productId);
 
@@ -118,13 +120,13 @@ async function prepareItems(orderItems: OrderItem[]): Promise<PreInvoiceItem[]> 
             productId: productId,
             quantity: item.quantity,
             pricePerItem: ProductListingUtils.getProductPrice(product),
-        } as PreInvoiceItem;
+        } as TransactionProduct;
 
         return {
             success: false,
             error: CHECKOUT_ERROR.PRODUCT_MISSING,
             message: `Product with ID ${productId} not found in database, home relay, or relay pool.`,
-        } as PreInvoiceItem;
+        } as TransactionProduct;
     });
 
     return Promise.all(itemPromises);
