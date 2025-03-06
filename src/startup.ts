@@ -1,8 +1,9 @@
-import subscribeOrders from "@/core/checkout/subscribeOrders";
+import subscribeDirectMessages from "@/core/subscribeDirectMessages";
 import synchronizeProducts from "@/core/products/synchronizeProducts";
+import { sendDirectMessage } from "./utils/directMessageUtils";
 
 function verifyEnvVars(): void {
-    if (!process.env.PUBKEY || !process.env.PRIVKEY) { throw new Error(`[subscribeOrders]: PUBKEY or PRIVKEY not found in .env`) }
+    if (!process.env.PUBKEY || !process.env.PRIVKEY) { throw new Error(`[subscribeDirectMessages]: PUBKEY or PRIVKEY not found in .env`) }
 }
 
 export default async function startup(): Promise<void> {
@@ -12,7 +13,7 @@ export default async function startup(): Promise<void> {
         verifyEnvVars();
         await synchronizeProducts();
         // TODO: Fetch Receipt events from the Relay Pool and store them in the database
-        await subscribeOrders();
+        await subscribeDirectMessages();
     } catch (error) {
         console.error(`Startup failed: ${error}`);
         process.exit(1);

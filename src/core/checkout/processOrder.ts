@@ -2,7 +2,15 @@ import { OrderUtils, ProductListingUtils, type Order } from "nostr-commerce-sche
 import { getProduct } from "./getProduct";
 import { CHECKOUT_ERROR } from "./checkoutErrors";
 
-enum PAYMENT_STATUS {
+export enum ORDER_STATUS {
+    PENDING = "pending",
+    CONFIRMED = "confirmed",
+    PROCESSING = "processing",
+    COMPLETED = "completed",
+    CANCELLED = "cancelled",
+}
+
+export enum PAYMENT_STATUS {
     REQUESTED,
     PARTIAL,
     PAID,
@@ -10,15 +18,11 @@ enum PAYMENT_STATUS {
     ERROR
 }
 
-enum FULFILLMENT_STATUS {
-    PROCESSING,
-    COMPLETE,
-    ERROR
-}
-
-const testOrder = {
-    paymentStatus: PAYMENT_STATUS.PAID,
-    fulfillmentStatus: FULFILLMENT_STATUS.COMPLETE
+export enum FULFILLMENT_STATUS {
+    PROCESSING = "processing",
+    SHIPPED = "shipped",
+    DELIVERED = "delivered",
+    EXCEPTION = "exception",
 }
 
 type ProcessOrderResponse = {
@@ -63,6 +67,12 @@ export default async function processOrder(event: Order): Promise<ProcessOrderRe
             };
         }
 
+        // TODO: Generate an invoice and send it to the Customer
+        // TODO: Mark the Order as "processing" and send it to a WaitingForPayment queue
+        // TODO: Set up a webhook to listen for payment events
+        // TODO: When payment is received, mark the Order as "completed" and send a confirmation to the Customer
+        // TODO: When payment is received, start the fulfillment process
+
         return {
             success: true,
             messageToCustomer: "Order successfully processed",
@@ -77,12 +87,22 @@ async function verifyNewOrder(event: Order): Promise<ValidateOrderResponse> {
     try {
         console.log("[verifyNewOrder]: Verifying new order...");
         const items: OrderItem[] = OrderUtils.getOrderItems(event);
-        const transactionItems = await prepareItems(items);
+        const { transactionItems, missingItems } = await prepareItemsForTransaction(items);
+
+        if (transactionItems.length === 0) return {
+            success: false,
+            messageToCustomer: "[Commerce Coordinator Bot]: Sorry, I ran into a problem. I'll contact you shortly to proceed with your order."
+        };
+
+        if (missingItems.length > 0) {
+            const shouldContinue = await handleUnsuccessfulItems(missingItems);
+            if (!shouldContinue) return {
+                success: false, messageToCustomer: "[Commerce Coordinator Bot]: No problem at all. Feel free to place another order anytime."
+            }
+        }
+
         const transaction = { items: transactionItems } as Transaction;
-
         console.log("Transaction:", transaction);
-
-
 
         // TODO: "We couldn't find all of the items in your order. Here's what we can find: [list of items found]. Do you want to proceed with the order?"
 
@@ -108,9 +128,7 @@ async function verifyNewOrder(event: Order): Promise<ValidateOrderResponse> {
     }
 }
 
-const preInvoiceStep = async (items: OrderItem[]) => { };
-
-async function prepareItems(orderItems: OrderItem[]): Promise<TransactionProduct[]> {
+async function prepareItemsForTransaction(orderItems: OrderItem[]): Promise<{ transactionItems: TransactionProduct[], missingItems: TransactionProduct[] }> {
     const itemPromises: Promise<TransactionProduct>[] = orderItems.map(async (item) => {
         const productId = OrderUtils.getProductIdFromOrderItem(item);
         const product = await getProduct(productId);
@@ -129,8 +147,24 @@ async function prepareItems(orderItems: OrderItem[]): Promise<TransactionProduct
         } as TransactionProduct;
     });
 
-    return Promise.all(itemPromises);
+    const allItems = await Promise.all(itemPromises);
+    const [items, missingItems]: TransactionProduct[][] = allItems.reduce(
+        (result: TransactionProduct[][], item: TransactionProduct) => {
+            result[item.success ? 0 : 1].push(item);
+            return result;
+        },
+        [[], []]
+    );
+
+    return { transactionItems: items, missingItems };
 };
+
+async function handleUnsuccessfulItems(missingItems: TransactionProduct[]): Promise<boolean> {
+    // Send a DM to the customer with the list of missing items, and ask if they want to proceed with the order. If they do, return true. If they don't, return false.
+
+    console.log(["handleUnsuccessfulItems]: Missing items:", missingItems]);
+    return false;
+}
 
 //     const addressString = orderEvent.tags.find(tag => tag[0] === "address")?.[1];
 //     let address: { address1: string, address2?: string, city: string, first_name: string, last_name: string, zip: string } | undefined;

@@ -1,0 +1,137 @@
+import type { FULFILLMENT_STATUS, ORDER_STATUS, PAYMENT_STATUS } from "@/core/checkout/processOrder";
+import { getNdk } from "@/services/ndkService";
+import { NDKEvent, NDKPrivateKeySigner, NDKRelay, NDKUser } from "@nostr-dev-kit/ndk";
+import { generateSecretKey, getPublicKey } from "nostr-tools";
+
+export enum NIP17_KIND {
+    MESSAGE = 14,
+    ORDER_PROCESSING = 16,
+    RECEIPT = 17,
+}
+
+export enum ORDER_MESSAGE_TYPE {
+    CREATION = "1",
+    PAYMENT_REQUEST = "2",
+    STATUS_UPDATE = "3",
+    SHIPPING_UPDATE = "4",
+}
+
+export async function sendDirectMessage(recipient: string, message: string): Promise<{ success: boolean, message: string }> {
+    try {
+        const event = await createNip17GiftWrapEvent(NIP17_KIND.MESSAGE, recipient, message);
+        const { success } = await postEvent(event);
+
+        if (success) return { success: true, message: "Direct message sent successfully" };
+        return { success: false, message: "Direct message was created, but didn't publish to the relay pool." };
+    } catch (error) {
+        console.error(error);
+        return { success: false, message: "There was an error while trying to send a direct message." };
+    }
+}
+
+type OrderStatusUpdateArgs = {
+    recipient: string;
+    orderId: string;
+    status: ORDER_STATUS | FULFILLMENT_STATUS;
+    type: ORDER_MESSAGE_TYPE;
+    message: string;
+}
+
+export async function sendOrderStatusUpdateMessage({ recipient, orderId, status, type, message }: OrderStatusUpdateArgs): Promise<{ success: boolean, message: string }> {
+    try {
+        const kind = NIP17_KIND.ORDER_PROCESSING;
+
+        const tags = [
+            ["order_id", orderId],
+            ["status", status],
+            ["type", type], // Status update
+        ];
+
+        const event = await createNip17GiftWrapEvent(kind, recipient, message, type, tags);
+        const { success } = await postEvent(event);
+
+        if (success) return { success: true, message: "Direct message sent successfully" };
+        return { success: false, message: "Direct message was created, but didn't publish to the relay pool." };
+    } catch (error) {
+        console.error(error);
+        return { success: false, message: "There was an error while trying to send a direct message." };
+    }
+}
+
+// export function sendPaymentRequestMessage(recipient: string, message: string): Promise<{ success: boolean, message: string }> {
+
+// export function sendReceiptMessage(recipient: string, message: string): Promise<{ success: boolean, message: string }> {
+//     try {
+//         const kind = NIP17_KIND.RECEIPT;
+//     } catch (error) {
+//         console.error(error);
+//         return { success: false, message: "There was an error while trying to send a direct message." };
+//     }
+// }
+
+async function createNip17GiftWrapEvent(kind: NIP17_KIND, recipient: string, message: string, type?: ORDER_MESSAGE_TYPE, tags?: string[][]): Promise<NDKEvent> {
+    const ndk = await getNdk();
+    const rumor = new NDKEvent(ndk);
+
+    const rumorTags = [
+        ["p", recipient],
+    ];
+
+    if (type) rumorTags.push(["type", type.toString()]);
+    if (tags) rumorTags.push(...tags);
+
+    rumor.kind = kind;
+    rumor.tags = rumorTags;
+    rumor.content = message;
+
+    // Create seal (kind 13)
+    const sealEvent = new NDKEvent(ndk);
+    sealEvent.kind = 13;
+    const time = Math.floor(Date.now() / 1000);
+    sealEvent.created_at = time;
+
+    const recipientNdkUser = new NDKUser({ pubkey: recipient });
+
+    // Encrypt the order content
+    sealEvent.content = await ndk.signer!.encrypt(
+        recipientNdkUser,
+        JSON.stringify(rumor)
+    );
+
+    await sealEvent.sign();
+
+    // Create gift wrap (kind 1059)
+    const giftWrapEvent = new NDKEvent(ndk);
+    giftWrapEvent.kind = 1059;
+    giftWrapEvent.created_at = time;
+    giftWrapEvent.tags = [['p', recipient]];
+
+    console.log("Generating random keypair for gift wrap");
+
+    // Generate random keypair for gift wrap
+    const randomPrivateKey = generateSecretKey();
+    const randomPubkey = getPublicKey(randomPrivateKey);
+    const randomSigner = new NDKPrivateKeySigner(randomPrivateKey);
+
+    // Encrypt the seal
+    giftWrapEvent.pubkey = randomPubkey;
+    giftWrapEvent.content = await randomSigner.encrypt(
+        recipientNdkUser,
+        JSON.stringify(sealEvent),
+    );
+
+    // Sign the gift wrap with random private key
+    await giftWrapEvent.sign(randomSigner);
+
+    return giftWrapEvent;
+}
+
+async function postEvent(event: NDKEvent): Promise<{ success: boolean, message: string }> {
+    try {
+        const relays: Set<NDKRelay> = await event.publish();
+        return { success: relays.size > 0, message: "Event posted successfully" };
+    } catch (error) {
+        console.error(error);
+        return { success: false, message: "Failed to post event" };
+    }
+}
