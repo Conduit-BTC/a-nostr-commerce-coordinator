@@ -70,15 +70,13 @@ async function directMessageQueueEventHandler(queueEvent: QueueEvent) {
 
         if (order.success) {
             // TODO: Check order-id against all Receipt events, and if it's already been processed, ignore it in the future. An order may make it this far if the database was previously wiped, or some orders have been processed outside of the Coorindator.
-            const processOrderResult = await processOrder(order.data)
+            const processOrderResult = await processOrder(order.data, event.pubkey)
             if (!processOrderResult?.success) throw new Error(processOrderResult.messageToCustomer)
             pendingDirectMessageQueue.confirmProcessed(queueEvent.id)
             orderDb.put(`nostr-order-event:${event.id}`, event)
             console.info(`[subscribeDirectMessages]: Order processed: ${event.id}`)
             return;
         }
-
-
 
         // We've determined this is not a valid order event. It may be a different type of Coordinator-handled message from the Customer, however.
         // TODO: Push to a different queue

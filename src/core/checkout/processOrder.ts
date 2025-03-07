@@ -1,6 +1,9 @@
 import { OrderUtils, ProductListingUtils, type Order, type ProductListing } from "nostr-commerce-schema";
 import { getProduct } from "./getProduct";
 import { CHECKOUT_ERROR } from "./checkoutErrors";
+import { createInvoice } from "@/interfaces/payment/LightningInterface";
+import { sendPaymentRequestMessage } from "@/utils/directMessageUtils";
+import { custom } from "zod";
 
 export enum ORDER_STATUS {
     PENDING = "pending",
@@ -25,7 +28,7 @@ export enum FULFILLMENT_STATUS {
     EXCEPTION = "exception",
 }
 
-type ValidateOrderResponse = {
+type PerformTransactionPipelineResponse = {
     success: boolean,
     messageToCustomer: string,
     transaction?: Transaction,
@@ -56,21 +59,29 @@ type OrderItem = {
 }
 
 type Transaction = {
+    orderId: string;
     items: TransactionProduct[];
     event: Order;
+    customerPubkey: string;
     totalPrice: {
         amount: number;
         currency: string;
     },
 };
 
-export default async function processOrder(event: Order): Promise<ProcessOrderStepResponse> {
+type CreateTransactionResponse = {
+    success: boolean;
+    transaction?: Transaction;
+    messageToCustomer?: string;
+}
+
+export default async function processOrder(event: Order, customerPubkey: string): Promise<ProcessOrderStepResponse> {
     try {
-        const validateOrderResponse = await verifyNewOrder(event);
-        if (!validateOrderResponse.success) {
+        const performTransactionPipelineResponse = await performTransactionPipeline(event, customerPubkey);
+        if (!performTransactionPipelineResponse.success) {
             return {
                 success: false,
-                messageToCustomer: validateOrderResponse.messageToCustomer,
+                messageToCustomer: performTransactionPipelineResponse.messageToCustomer,
             };
         }
 
@@ -88,41 +99,41 @@ export default async function processOrder(event: Order): Promise<ProcessOrderSt
     }
 }
 
-async function verifyNewOrder(event: Order): Promise<ValidateOrderResponse> {
+async function performTransactionPipeline(event: Order, customerPubkey: string): Promise<PerformTransactionPipelineResponse> {
     try {
         console.log("[verifyNewOrder]: Verifying new order...");
-        const items: OrderItem[] = OrderUtils.getOrderItems(event);
-        const { transactionItems, missingItems } = await prepareTransactionItems(items);
 
-        if (transactionItems.length === 0 || missingItems.length > 0) {
-            console.error(`[verifyNewOrder]: Issue with items in Order ID: ${OrderUtils.getOrderId(event)}`);
-            return {
-                success: false,
-                messageToCustomer: "[Commerce Coordinator Bot]: Sorry, I ran into a problem. I'll contact you shortly to proceed with your order."
-            };
-        }
+        // TODO: Shipping steps
 
-        const transaction = { items: transactionItems, event } as Transaction;
-        const validateTransactionResponse = validateTransaction(transaction);
+        const createTransactionResponse = await createTransaction(event, customerPubkey);
+        if (!createTransactionResponse.success) return {
+            success: false,
+            messageToCustomer: createTransactionResponse.messageToCustomer!,
+        };
+
+        const { transaction } = createTransactionResponse;
+        const validateTransactionResponse = validateTransaction(transaction!);
 
         if (!validateTransactionResponse.success) {
-            console.error(`[verifyNewOrder]: Issue with transaction in Order ID: ${OrderUtils.getOrderId(event)}`);
+            console.error("[verifyNewOrder]: Issue with transaction in ", transaction!.orderId);
             return {
                 success: false,
                 messageToCustomer: validateTransactionResponse.messageToCustomer,
             };
         }
 
-        const finalizeTransactionResponse = finalizeTransaction(transaction);
+        console.log("[verifyNewOrder]: Transaction valid for Order ID:", transaction!.orderId);
+
+        const finalizeTransactionResponse = await finalizeTransaction(transaction!);
         if (!finalizeTransactionResponse.success) {
-            console.error(`[verifyNewOrder]: Issue with finalizing transaction in Order ID: ${OrderUtils.getOrderId(event)}`);
+            console.error("[verifyNewOrder]: Issue with finalizing transaction in ", transaction!.orderId);
             return {
                 success: false,
                 messageToCustomer: finalizeTransactionResponse.messageToCustomer,
             };
         }
 
-        console.log("[processOrder]: Transaction complete for Order ID: ", OrderUtils.getOrderId(event));
+        console.log("[processOrder]: Transaction complete for ", transaction!.orderId);
 
         return {
             success: true,
@@ -130,9 +141,27 @@ async function verifyNewOrder(event: Order): Promise<ValidateOrderResponse> {
             transaction,
         };
     } catch (error) {
-        console.error("validateOrder failed:", error);
-        return { success: false, messageToCustomer: "Order validation failed. Contact Merchant." };
+        console.error("performTransactionPipeline failed:", error);
+        return { success: false, messageToCustomer: "We're sorry, something went wrong with the checkout process. We'll contact you shortly to finalize this order." };
     }
+}
+
+async function createTransaction(order: Order, customerPubkey: string): Promise<CreateTransactionResponse> {
+    const items: OrderItem[] = OrderUtils.getOrderItems(order);
+    const { transactionItems, missingItems } = await prepareTransactionItems(items);
+    const orderId = OrderUtils.getOrderId(order);
+
+    // Right now, we're failing the order if any Products cannot be located in the database, home relay, or relay pool. Later, we'll gracefully handle this by contacting the Customer to ask if they'd like to proceed without those items.
+    if (transactionItems.length === 0 || missingItems.length > 0) {
+        console.error(`[verifyNewOrder]: Issue with items in Order ID: ${orderId}`);
+        return {
+            success: false,
+            messageToCustomer: "[Commerce Coordinator Bot]: Sorry, I ran into a problem. I'll contact you shortly to proceed with your order."
+        };
+    }
+
+    const transaction = { orderId, items: transactionItems, event: order, customerPubkey } as Transaction;
+    return { success: true, transaction };
 }
 
 async function prepareTransactionItems(orderItems: OrderItem[]): Promise<{ transactionItems: TransactionProduct[], missingItems: TransactionProduct[] }> {
@@ -174,6 +203,12 @@ async function prepareTransactionItems(orderItems: OrderItem[]): Promise<{ trans
 function validateTransaction(transaction: Transaction): ProcessOrderStepResponse {
     const { items } = transaction;
 
+    // Price Check
+    // We're only supporting USD for now. This will need to be updated to support multiple currencies.
+    const isOnlyUsd = items.every((item) => item.pricePerItem!.currency === "USD");
+    if (!isOnlyUsd) return { success: false, messageToCustomer: "Sorry, we only support USD as the base Product price currency at the moment." };
+
+    // Stock Check
     const stockCheckErrors: ProcessOrderStepResponse[] = [];
 
     items.some((item) => {
@@ -192,23 +227,28 @@ function validateTransaction(transaction: Transaction): ProcessOrderStepResponse
     return { success: true, messageToCustomer: "Transaction validated." };
 }
 
-function finalizeTransaction(transaction: Transaction): ProcessOrderStepResponse {
-    console.warn("[finalizeTransaction]: NOT IMPLEMENTED YET!");
-
+async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrderStepResponse> {
+    // console.warn("[finalizeTransaction]: NOT IMPLEMENTED YET!");
     return { success: false, messageToCustomer: "Not implemented yet." };
 
-    // const { items, event } = transaction;
+    const { items, orderId, customerPubkey } = transaction;
 
-    // const totalPrice = items.reduce((total, item) => {
-    //     const price = parseFloat(item.pricePerItem!.amount) * item.quantity!;
-    //     return total + price;
-    // }, 0.0);
+    // We're only supporting USD base currency for now. This was assured in validateTransaction(). This will need to be updated to support multiple currencies.
+    const totalPrice = items.reduce((total, item) => {
+        const price = parseFloat(item.pricePerItem!.amount) * item.quantity!;
+        return total + price;
+    }, 0.0);
 
-    // TODO: Generate an invoice and send it to the Customer
-    // const lnInvoice = LightningProviderInterface.createInvoice({
-    //     amount: totalPrice,
-    //     orderId: OrderUtils.getOrderId(event),
-    // });
+    const createInvoiceResponse = await createInvoice(orderId, totalPrice);
+    if (!createInvoiceResponse.success) return { success: false, messageToCustomer: createInvoiceResponse.message! };
+
+    console.log("[finalizeTransaction]: Lightning invoice created for Order ID:", orderId, createInvoiceResponse.lightningInvoice!);
+
+    // Send the invoice to the customer
+    const sendMessageResponse = await sendPaymentRequestMessage({ recipient: customerPubkey, orderId, amount: totalPrice.toString(), lnInvoice: createInvoiceResponse.lightningInvoice! });
+    if (!sendMessageResponse.success) return { success: false, messageToCustomer: sendMessageResponse.message! };
+
+    console.log(`[finalizeTransaction]: Payment request sent to ${customerPubkey} for ${orderId}`);
 
     // TODO: Mark the Order as "processing" and send it to a WaitingForPayment queue
 

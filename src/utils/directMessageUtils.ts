@@ -1,4 +1,4 @@
-import type { FULFILLMENT_STATUS, ORDER_STATUS, PAYMENT_STATUS } from "@/core/checkout/processOrder";
+import type { FULFILLMENT_STATUS, ORDER_STATUS } from "@/core/checkout/processOrder";
 import { getNdk } from "@/services/ndkService";
 import { NDKEvent, NDKPrivateKeySigner, NDKRelay, NDKUser } from "@nostr-dev-kit/ndk";
 import { generateSecretKey, getPublicKey } from "nostr-tools";
