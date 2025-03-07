@@ -15,7 +15,10 @@ export interface QueueEvent {
     messages?: string[];
 }
 
+export const NostrEventQueueRegistry = new Map<string, NostrEventQueue>()
+
 export class NostrEventQueue extends EventEmitter {
+    public name: string | null = null;
     private queue: any[] = []
     private inFlightEvents: Map<string, QueueEvent> = new Map();
     private processing: boolean = false
@@ -24,10 +27,11 @@ export class NostrEventQueue extends EventEmitter {
 
     // TODO: Implement delay between events, a max retry mechanism, and a "failed" queue for events that failed to process
 
-    constructor(processHandler: (event: QueueEvent) => void, defaultStatus?: QUEUE_EVENT_STATUS) {
+    constructor(name: string, processHandler: (event: QueueEvent) => void, defaultStatus?: QUEUE_EVENT_STATUS) {
         super()
-        this.defaultStatus = defaultStatus ?? QUEUE_EVENT_STATUS.PENDING
-        this.processHandler = processHandler
+        this.defaultStatus = defaultStatus ?? QUEUE_EVENT_STATUS.PENDING;
+        this.processHandler = processHandler;
+        NostrEventQueueRegistry.set(name, this)
     }
 
     push(event: NostrEvent, messages?: any): void {

@@ -25,3 +25,8 @@ export const merchantMessagesFilter: NDKFilter = {
     kinds: [1059 as NDKKind],
     '#p': [pubkey!]
 }
+
+export enum NOSTR_EVENT_QUEUE_NAME {
+    PENDING_DIRECT_MESSAGES = "pending_direct_messages",
+    FAILED_ORDERS = "failed_orders",
+}
