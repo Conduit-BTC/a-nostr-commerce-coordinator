@@ -1,6 +1,5 @@
 import subscribeDirectMessages from "@/core/subscribeDirectMessages";
 import synchronizeProducts from "@/core/products/synchronizeProducts";
-import { sendDirectMessage } from "./utils/directMessageUtils";
 
 function verifyEnvVars(): void {
     if (!process.env.PUBKEY || !process.env.PRIVKEY) { throw new Error(`[subscribeDirectMessages]: PUBKEY or PRIVKEY not found in .env`) }

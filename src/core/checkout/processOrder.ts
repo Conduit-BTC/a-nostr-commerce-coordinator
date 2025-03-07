@@ -1,4 +1,4 @@
-import { OrderUtils, ProductListingUtils, type Order } from "nostr-commerce-schema";
+import { OrderUtils, ProductListingUtils, type Order, type ProductListing } from "nostr-commerce-schema";
 import { getProduct } from "./getProduct";
 import { CHECKOUT_ERROR } from "./checkoutErrors";
 
@@ -25,19 +25,21 @@ export enum FULFILLMENT_STATUS {
     EXCEPTION = "exception",
 }
 
-type ProcessOrderResponse = {
-    success: boolean,
-    messageToCustomer: string,
-}
-
 type ValidateOrderResponse = {
     success: boolean,
     messageToCustomer: string,
+    transaction?: Transaction,
+}
+
+type ProcessOrderStepResponse = {
+    success: boolean;
+    error?: any;
+    messageToCustomer: string;
 }
 
 type TransactionProduct = {
     success: boolean,
-    productId?: string,
+    product?: ProductListing,
     quantity?: number,
     pricePerItem?: {
         amount: string;
@@ -55,9 +57,14 @@ type OrderItem = {
 
 type Transaction = {
     items: TransactionProduct[];
+    event: Order;
+    totalPrice: {
+        amount: number;
+        currency: string;
+    },
 };
 
-export default async function processOrder(event: Order): Promise<ProcessOrderResponse> {
+export default async function processOrder(event: Order): Promise<ProcessOrderStepResponse> {
     try {
         const validateOrderResponse = await verifyNewOrder(event);
         if (!validateOrderResponse.success) {
@@ -67,8 +74,6 @@ export default async function processOrder(event: Order): Promise<ProcessOrderRe
             };
         }
 
-        // TODO: Generate an invoice and send it to the Customer
-        // TODO: Mark the Order as "processing" and send it to a WaitingForPayment queue
         // TODO: Set up a webhook to listen for payment events
         // TODO: When payment is received, mark the Order as "completed" and send a confirmation to the Customer
         // TODO: When payment is received, start the fulfillment process
@@ -87,63 +92,70 @@ async function verifyNewOrder(event: Order): Promise<ValidateOrderResponse> {
     try {
         console.log("[verifyNewOrder]: Verifying new order...");
         const items: OrderItem[] = OrderUtils.getOrderItems(event);
-        const { transactionItems, missingItems } = await prepareItemsForTransaction(items);
+        const { transactionItems, missingItems } = await prepareTransactionItems(items);
 
-        if (transactionItems.length === 0) return {
-            success: false,
-            messageToCustomer: "[Commerce Coordinator Bot]: Sorry, I ran into a problem. I'll contact you shortly to proceed with your order."
-        };
-
-        if (missingItems.length > 0) {
-            const shouldContinue = await handleUnsuccessfulItems(missingItems);
-            if (!shouldContinue) return {
-                success: false, messageToCustomer: "[Commerce Coordinator Bot]: No problem at all. Feel free to place another order anytime."
-            }
+        if (transactionItems.length === 0 || missingItems.length > 0) {
+            console.error(`[verifyNewOrder]: Issue with items in Order ID: ${OrderUtils.getOrderId(event)}`);
+            return {
+                success: false,
+                messageToCustomer: "[Commerce Coordinator Bot]: Sorry, I ran into a problem. I'll contact you shortly to proceed with your order."
+            };
         }
 
-        const transaction = { items: transactionItems } as Transaction;
-        console.log("Transaction:", transaction);
+        const transaction = { items: transactionItems, event } as Transaction;
+        const validateTransactionResponse = validateTransaction(transaction);
 
-        // TODO: "We couldn't find all of the items in your order. Here's what we can find: [list of items found]. Do you want to proceed with the order?"
+        if (!validateTransactionResponse.success) {
+            console.error(`[verifyNewOrder]: Issue with transaction in Order ID: ${OrderUtils.getOrderId(event)}`);
+            return {
+                success: false,
+                messageToCustomer: validateTransactionResponse.messageToCustomer,
+            };
+        }
 
-        // Match the Order's price to the Product's price
-        // If they don't match, include very-obvious messaging in the Order that the price has changed, and continue the process.
+        const finalizeTransactionResponse = finalizeTransaction(transaction);
+        if (!finalizeTransactionResponse.success) {
+            console.error(`[verifyNewOrder]: Issue with finalizing transaction in Order ID: ${OrderUtils.getOrderId(event)}`);
+            return {
+                success: false,
+                messageToCustomer: finalizeTransactionResponse.messageToCustomer,
+            };
+        }
 
-        // Check the Order's quantity against the Product's available stock
-        // If the quantity is more than the Product's available stock, reject the order. Include a message in the Order that the Product has X stock, but the order was for Y quantity. Request the Customer to update their order, and try again.
+        console.log("[processOrder]: Transaction complete for Order ID: ", OrderUtils.getOrderId(event));
 
-        // Check the Order's shipping address against the Product's shipping availability
-        // If the Product isn't available for shipping to the Order's address, reject the order. Include a message in the Order that the Product isn't available for shipping to the Order's address.
-
-        // Check the Order's payment method against the Product's payment methods
-        // If the Product isn't available for the Order's payment method, reject the order. Include a message in the Order that the Product isn't available for the Order's payment method.
-
-        // If all checks pass, return true
-        // TODO End
-        return { success: false, messageToCustomer: "validateOrder isn't implemented yet!" };
-
+        return {
+            success: true,
+            messageToCustomer: "Order successfully processed",
+            transaction,
+        };
     } catch (error) {
         console.error("validateOrder failed:", error);
         return { success: false, messageToCustomer: "Order validation failed. Contact Merchant." };
     }
 }
 
-async function prepareItemsForTransaction(orderItems: OrderItem[]): Promise<{ transactionItems: TransactionProduct[], missingItems: TransactionProduct[] }> {
+async function prepareTransactionItems(orderItems: OrderItem[]): Promise<{ transactionItems: TransactionProduct[], missingItems: TransactionProduct[] }> {
     const itemPromises: Promise<TransactionProduct>[] = orderItems.map(async (item) => {
+        let totalPrice = {
+            amount: 0.0,
+            currency: null,
+        }; // TODO: This is brittle at the moment, since it assumes all products are in the same currency. An easy assumption to make, but the protocol allows each Product to have a different currency, so this could cause a problem.
+
         const productId = OrderUtils.getProductIdFromOrderItem(item);
         const product = await getProduct(productId);
 
-        if (product) return {
-            success: true,
-            productId: productId,
-            quantity: item.quantity,
-            pricePerItem: ProductListingUtils.getProductPrice(product),
-        } as TransactionProduct;
-
-        return {
+        if (!product) return {
             success: false,
             error: CHECKOUT_ERROR.PRODUCT_MISSING,
             message: `Product with ID ${productId} not found in database, home relay, or relay pool.`,
+        } as TransactionProduct;
+
+        return {
+            success: true,
+            product: product,
+            quantity: item.quantity,
+            pricePerItem: ProductListingUtils.getProductPrice(product),
         } as TransactionProduct;
     });
 
@@ -159,29 +171,45 @@ async function prepareItemsForTransaction(orderItems: OrderItem[]): Promise<{ tr
     return { transactionItems: items, missingItems };
 };
 
-async function handleUnsuccessfulItems(missingItems: TransactionProduct[]): Promise<boolean> {
-    // Send a DM to the customer with the list of missing items, and ask if they want to proceed with the order. If they do, return true. If they don't, return false.
+function validateTransaction(transaction: Transaction): ProcessOrderStepResponse {
+    const { items } = transaction;
 
-    console.log(["handleUnsuccessfulItems]: Missing items:", missingItems]);
-    return false;
+    const stockCheckErrors: ProcessOrderStepResponse[] = [];
+
+    items.some((item) => {
+        const stock = ProductListingUtils.getProductStock(item.product!);
+        if (!stock) return false;
+        if (item.quantity! > stock!) stockCheckErrors.push({
+            success: false,
+            error: CHECKOUT_ERROR.INSUFFICIENT_STOCK,
+            messageToCustomer: `Issue with your order: "${ProductListingUtils.getProductTitle(item.product!)}" has only ${stock} in stock, but you ordered ${item.quantity}. Please update your order and try again.`
+        });
+        return true;
+    });
+
+    if (stockCheckErrors.length > 0) return stockCheckErrors[0];
+
+    return { success: true, messageToCustomer: "Transaction validated." };
 }
 
-//     const addressString = orderEvent.tags.find(tag => tag[0] === "address")?.[1];
-//     let address: { address1: string, address2?: string, city: string, first_name: string, last_name: string, zip: string } | undefined;
-//     if (addressString) address = JSON.parse(addressString);
+function finalizeTransaction(transaction: Transaction): ProcessOrderStepResponse {
+    console.warn("[finalizeTransaction]: NOT IMPLEMENTED YET!");
 
-//     const input: any = {
-//         currency_code: "sats",
-//         items: products
-//     };
+    return { success: false, messageToCustomer: "Not implemented yet." };
 
-//     if (address) {
-//         input.shipping_address = {
-//             address_1: address.address1,
-//             address_2: address.address2,
-//             city: address.city,
-//             first_name: address.first_name,
-//             last_name: address.last_name,
-//             postal_code: address.zip,
-//         };
-//     }
+    // const { items, event } = transaction;
+
+    // const totalPrice = items.reduce((total, item) => {
+    //     const price = parseFloat(item.pricePerItem!.amount) * item.quantity!;
+    //     return total + price;
+    // }, 0.0);
+
+    // TODO: Generate an invoice and send it to the Customer
+    // const lnInvoice = LightningProviderInterface.createInvoice({
+    //     amount: totalPrice,
+    //     orderId: OrderUtils.getOrderId(event),
+    // });
+
+    // TODO: Mark the Order as "processing" and send it to a WaitingForPayment queue
+
+}

@@ -42,32 +42,79 @@ export async function sendOrderStatusUpdateMessage({ recipient, orderId, status,
         const kind = NIP17_KIND.ORDER_PROCESSING;
 
         const tags = [
-            ["order_id", orderId],
-            ["status", status],
+            ["subject", "order-info"],
             ["type", type], // Status update
+            ["order", orderId],
+            ["status", status],
         ];
 
         const event = await createNip17GiftWrapEvent(kind, recipient, message, type, tags);
         const { success } = await postEvent(event);
 
-        if (success) return { success: true, message: "Direct message sent successfully" };
-        return { success: false, message: "Direct message was created, but didn't publish to the relay pool." };
+        if (success) return { success: true, message: "Order status DM sent successfully" };
+        return { success: false, message: "Order status DM was created, but didn't publish to the relay pool." };
     } catch (error) {
         console.error(error);
-        return { success: false, message: "There was an error while trying to send a direct message." };
+        return { success: false, message: "There was an error while trying to send an order status DM." };
     }
 }
 
-// export function sendPaymentRequestMessage(recipient: string, message: string): Promise<{ success: boolean, message: string }> {
+type PaymentRequestArgs = {
+    recipient: string;
+    orderId: string;
+    amount: string;
+    lnInvoice: string;
+}
 
-// export function sendReceiptMessage(recipient: string, message: string): Promise<{ success: boolean, message: string }> {
-//     try {
-//         const kind = NIP17_KIND.RECEIPT;
-//     } catch (error) {
-//         console.error(error);
-//         return { success: false, message: "There was an error while trying to send a direct message." };
-//     }
-// }
+export async function sendPaymentRequestMessage({ recipient, orderId, amount, lnInvoice }: PaymentRequestArgs): Promise<{ success: boolean, message: string }> {
+    try {
+        const kind = NIP17_KIND.ORDER_PROCESSING;
+        const type = ORDER_MESSAGE_TYPE.PAYMENT_REQUEST;
+        const tags = [
+            ["subject", "order-payment"],
+            ["type", type],
+            ["order", orderId],
+            ["amount", amount],
+            ["payment", "lightning", lnInvoice]
+        ];
+
+        const event = await createNip17GiftWrapEvent(kind, recipient, "Payment request", type, tags);
+        const { success } = await postEvent(event);
+
+        if (success) return { success: true, message: "Payment request sent successfully" };
+        return { success: false, message: "Payment request was created, but didn't publish to the relay pool." };
+    } catch (error) {
+        console.error(error);
+        return { success: false, message: "There was an error while trying to send a payment request." };
+    }
+};
+
+type ReceiptArgs = {
+    recipient: string;
+    orderId: string;
+    lnInvoice: string;
+    lnPaymentHash: string;
+};
+
+export async function sendReceiptMessage({ recipient, orderId, lnInvoice, lnPaymentHash }: ReceiptArgs): Promise<{ success: boolean, message: string }> {
+    try {
+        const kind = NIP17_KIND.RECEIPT;
+        const tags = [
+            ["subject", "order-payment"],
+            ["order", orderId],
+            ["payment", "lightning", lnInvoice, lnPaymentHash]
+        ];
+
+        const event = await createNip17GiftWrapEvent(kind, recipient, "Payment confirmation details", undefined, tags);
+        const { success } = await postEvent(event);
+
+        if (success) return { success: true, message: "Payment confirmation sent successfully" };
+        return { success: false, message: "Payment confirmation was created, but didn't publish to the relay pool." };
+    } catch (error) {
+        console.error(error);
+        return { success: false, message: "There was an error while trying to send a payment confirmation." };
+    }
+};
 
 async function createNip17GiftWrapEvent(kind: NIP17_KIND, recipient: string, message: string, type?: ORDER_MESSAGE_TYPE, tags?: string[][]): Promise<NDKEvent> {
     const ndk = await getNdk();
