@@ -35,9 +35,10 @@ type OrderStatusUpdateArgs = {
     status: ORDER_STATUS | FULFILLMENT_STATUS;
     type: ORDER_MESSAGE_TYPE;
     message: string;
+    tags?: string[][];
 }
 
-export async function sendOrderStatusUpdateMessage({ recipient, orderId, status, type, message }: OrderStatusUpdateArgs): Promise<{ success: boolean, message: string }> {
+export async function sendOrderStatusUpdateMessage({ recipient, orderId, status, type, message, tags: extraTags }: OrderStatusUpdateArgs): Promise<{ success: boolean, message: string }> {
     try {
         const kind = NIP17_KIND.ORDER_PROCESSING;
 
@@ -47,6 +48,8 @@ export async function sendOrderStatusUpdateMessage({ recipient, orderId, status,
             ["order", orderId],
             ["status", status],
         ];
+
+        if (extraTags) tags.push(...extraTags);
 
         const event = await createNip17GiftWrapEvent(kind, recipient, message, type, tags);
         const { success } = await postEvent(event);
@@ -152,8 +155,6 @@ async function createNip17GiftWrapEvent(kind: NIP17_KIND, recipient: string, mes
     giftWrapEvent.kind = 1059;
     giftWrapEvent.created_at = time;
     giftWrapEvent.tags = [['p', recipient]];
-
-    console.log("Generating random keypair for gift wrap");
 
     // Generate random keypair for gift wrap
     const randomPrivateKey = generateSecretKey();

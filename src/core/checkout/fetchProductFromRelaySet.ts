@@ -1,6 +1,5 @@
 import { getNdk } from "@/services/ndkService";
 import { getMerchantSpecificProductFilter } from "@/utils/constants";
-import type NDK from "@nostr-dev-kit/ndk";
 import type { NDKRelaySet } from "@nostr-dev-kit/ndk";
 import { validateProductListing, type ProductListing } from "nostr-commerce-schema";
 

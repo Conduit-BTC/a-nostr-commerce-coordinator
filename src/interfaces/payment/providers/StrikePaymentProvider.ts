@@ -1,5 +1,6 @@
 import { v4 as uuid } from 'uuid';
-import type { GenerateInvoiceResponse } from '../LightningInterface';
+import type { CreateInvoiceResponse } from '../LightningInterface';
+import { DEBUG_CTRL } from 'dev/utils/debugModeControls';
 
 type StrikeResponse = {
     success: boolean;
@@ -11,10 +12,9 @@ type StrikeResponse = {
 // See https://docs.strike.me/walkthrough/receiving-payments
 
 const STRIKE_API_KEY = process.env.STRIKE_API_KEY!;
-const TEST_PAYMENT_FLOW = process.env.TEST_PAYMENT_FLOW === "true";
 
 const testPaymentAmount = 0.000000011234;
-if (TEST_PAYMENT_FLOW) console.warn(`>>> DEV MODE: Using test payment amount of ${testPaymentAmount} Satoshi <<<`);
+if (DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT) console.warn(`DEBUG MODE ===> [StrikePaymentProvider] Using test payment amount of ${testPaymentAmount} Satoshi <<<`);
 
 const headers = new Headers();
 headers.append('Content-Type', 'application/json');
@@ -26,9 +26,11 @@ const requestOptions = {
     headers
 }
 
-export async function generateInvoice(orderId: string, amountInSats: number): Promise<GenerateInvoiceResponse> {
+export async function generateInvoice(orderId: string, amountInSats: number): Promise<CreateInvoiceResponse> {
     try {
-        const generateBaseInvoiceResponse = await generateBaseInvoice(orderId, TEST_PAYMENT_FLOW ? testPaymentAmount : amountInSats);
+        if (DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT) console.log("DEBUG MODE ===> [generateInvoice]: USING FAKE AMOUNT FOR INVOICE GENERATION!");
+
+        const generateBaseInvoiceResponse = await generateBaseInvoice(orderId, DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT ? testPaymentAmount : amountInSats);
         if (!generateBaseInvoiceResponse.success) return { success: false, message: generateBaseInvoiceResponse.message! };
 
         const generateQuoteResponse = await generateQuote(generateBaseInvoiceResponse.invoiceId!);

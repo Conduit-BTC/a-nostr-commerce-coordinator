@@ -1,9 +1,13 @@
-import { type NostrEventQueue, NostrEventQueueRegistry } from "./NostrEventQueue";
+import { QUEUE_NAME } from "@/utils/constants";
+import { dmQueueEventHandler } from "./handlers/dmEventHandler";
+import { orderEventHandler } from "./handlers/orderEventHandler";
 
-export function getNostrEventQueue(key: string): NostrEventQueue {
-    const queue = NostrEventQueueRegistry.get(key);
-    if (!queue) {
-        throw new Error(`No queue found for key: ${key}`);
-    }
-    return queue;
+export const dmQueueConfig = {
+    name: QUEUE_NAME.DIRECT_MESSAGES,
+    handler: dmQueueEventHandler,
+}
+
+export const orderQueueConfig = {
+    name: QUEUE_NAME.ORDERS,
+    handler: orderEventHandler,
 }

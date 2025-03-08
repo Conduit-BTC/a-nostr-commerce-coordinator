@@ -1,9 +1,9 @@
 import { OrderUtils, ProductListingUtils, type Order, type ProductListing } from "nostr-commerce-schema";
 import { getProduct } from "./getProduct";
 import { CHECKOUT_ERROR } from "./checkoutErrors";
-import { createInvoice } from "@/interfaces/payment/LightningInterface";
+import { createInvoice, type CreateInvoiceResponse } from "@/interfaces/payment/LightningInterface";
 import { sendPaymentRequestMessage } from "@/utils/directMessageUtils";
-import { custom } from "zod";
+import { DEBUG_CTRL } from "dev/utils/debugModeControls";
 
 export enum ORDER_STATUS {
     PENDING = "pending",
@@ -34,10 +34,11 @@ type PerformTransactionPipelineResponse = {
     transaction?: Transaction,
 }
 
-type ProcessOrderStepResponse = {
+type ProcessOrderResponse = {
     success: boolean;
     error?: any;
-    messageToCustomer: string;
+    messageToCustomer?: string;
+    transaction?: Transaction;
 }
 
 type TransactionProduct = {
@@ -58,7 +59,7 @@ type OrderItem = {
     quantity: number;
 }
 
-type Transaction = {
+export type Transaction = {
     orderId: string;
     items: TransactionProduct[];
     event: Order;
@@ -67,6 +68,7 @@ type Transaction = {
         amount: number;
         currency: string;
     },
+    lightningInvoice?: string;
 };
 
 type CreateTransactionResponse = {
@@ -75,7 +77,7 @@ type CreateTransactionResponse = {
     messageToCustomer?: string;
 }
 
-export default async function processOrder(event: Order, customerPubkey: string): Promise<ProcessOrderStepResponse> {
+export default async function processOrder(event: Order, customerPubkey: string): Promise<ProcessOrderResponse> {
     try {
         const performTransactionPipelineResponse = await performTransactionPipeline(event, customerPubkey);
         if (!performTransactionPipelineResponse.success) {
@@ -118,7 +120,7 @@ async function performTransactionPipeline(event: Order, customerPubkey: string):
             console.error("[verifyNewOrder]: Issue with transaction in ", transaction!.orderId);
             return {
                 success: false,
-                messageToCustomer: validateTransactionResponse.messageToCustomer,
+                messageToCustomer: validateTransactionResponse.messageToCustomer!,
             };
         }
 
@@ -129,7 +131,7 @@ async function performTransactionPipeline(event: Order, customerPubkey: string):
             console.error("[verifyNewOrder]: Issue with finalizing transaction in ", transaction!.orderId);
             return {
                 success: false,
-                messageToCustomer: finalizeTransactionResponse.messageToCustomer,
+                messageToCustomer: finalizeTransactionResponse.messageToCustomer!,
             };
         }
 
@@ -200,7 +202,7 @@ async function prepareTransactionItems(orderItems: OrderItem[]): Promise<{ trans
     return { transactionItems: items, missingItems };
 };
 
-function validateTransaction(transaction: Transaction): ProcessOrderStepResponse {
+function validateTransaction(transaction: Transaction): ProcessOrderResponse {
     const { items } = transaction;
 
     // Price Check
@@ -209,7 +211,7 @@ function validateTransaction(transaction: Transaction): ProcessOrderStepResponse
     if (!isOnlyUsd) return { success: false, messageToCustomer: "Sorry, we only support USD as the base Product price currency at the moment." };
 
     // Stock Check
-    const stockCheckErrors: ProcessOrderStepResponse[] = [];
+    const stockCheckErrors: ProcessOrderResponse[] = [];
 
     items.some((item) => {
         const stock = ProductListingUtils.getProductStock(item.product!);
@@ -227,10 +229,7 @@ function validateTransaction(transaction: Transaction): ProcessOrderStepResponse
     return { success: true, messageToCustomer: "Transaction validated." };
 }
 
-async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrderStepResponse> {
-    // console.warn("[finalizeTransaction]: NOT IMPLEMENTED YET!");
-    return { success: false, messageToCustomer: "Not implemented yet." };
-
+async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrderResponse> {
     const { items, orderId, customerPubkey } = transaction;
 
     // We're only supporting USD base currency for now. This was assured in validateTransaction(). This will need to be updated to support multiple currencies.
@@ -239,17 +238,28 @@ async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrd
         return total + price;
     }, 0.0);
 
-    const createInvoiceResponse = await createInvoice(orderId, totalPrice);
+    // TODO: Swap out these DEBUG_MOD_CONTROLS with a sandbox mode that mocks the network, instead. Leaving here for now during early development.
+
+    if (DEBUG_CTRL.USE_MOCK_LIGHTNING_INVOICE) console.log("DEBUG MODE ===> [finalizeTransaction]: USING MOCK LIGHTNING INVOICE");
+
+    const createInvoiceResponse = DEBUG_CTRL.USE_MOCK_LIGHTNING_INVOICE ? mockCreateInvoiceResponse : await createInvoice(orderId, totalPrice);
     if (!createInvoiceResponse.success) return { success: false, messageToCustomer: createInvoiceResponse.message! };
 
-    console.log("[finalizeTransaction]: Lightning invoice created for Order ID:", orderId, createInvoiceResponse.lightningInvoice!);
+    console.log("[finalizeTransaction]: Lightning invoice successfully created for Order ID:", orderId);
+
+    if (DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES) console.log("DEBUG MODE ===> [finalizeTransaction]: SUPPRESSING OUTBOUND MESSAGES!");
 
     // Send the invoice to the customer
-    const sendMessageResponse = await sendPaymentRequestMessage({ recipient: customerPubkey, orderId, amount: totalPrice.toString(), lnInvoice: createInvoiceResponse.lightningInvoice! });
+    const paymentRequestMessageObj = { recipient: customerPubkey, orderId, amount: totalPrice.toString(), lnInvoice: createInvoiceResponse.lightningInvoice! };
+    const sendMessageResponse = DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES ? { success: true, message: "" } : await sendPaymentRequestMessage(paymentRequestMessageObj);
     if (!sendMessageResponse.success) return { success: false, messageToCustomer: sendMessageResponse.message! };
 
     console.log(`[finalizeTransaction]: Payment request sent to ${customerPubkey} for ${orderId}`);
+    return { success: true, transaction };
 
-    // TODO: Mark the Order as "processing" and send it to a WaitingForPayment queue
+}
 
+const mockCreateInvoiceResponse: CreateInvoiceResponse = {
+    success: true,
+    lightningInvoice: "lnbc1111_MOCK_INVOICE"
 }

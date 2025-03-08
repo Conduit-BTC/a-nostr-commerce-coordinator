@@ -4,9 +4,13 @@ export const DEFAULT_RELAYS = [
     "ws://localhost:7777"
 ];
 
-export const PRODUCT_EVENTS_DB_NAME = "nostr-product-events";
-export const ORDER_EVENTS_DB_NAME = "nostr-order-events";
-export const IGNORED_EVENTS_DB_NAME = "nostr-ignored-events";
+export enum DB_NAME {
+    PRODUCTS = "products-db",
+    PROCESSING_ORDERS = "processing-orders-db",
+    SUCCESSFUL_ORDERS = "successful-orders-db",
+    FAILED_ORDERS = "failed-orders-db",
+    IGNORED_EVENTS = "ignored-events-db",
+}
 
 const pubkey = process.env.PUBKEY;
 
@@ -26,7 +30,7 @@ export const merchantMessagesFilter: NDKFilter = {
     '#p': [pubkey!]
 }
 
-export enum NOSTR_EVENT_QUEUE_NAME {
-    PENDING_DIRECT_MESSAGES = "pending_direct_messages",
-    FAILED_ORDERS = "failed_orders",
+export enum QUEUE_NAME {
+    DIRECT_MESSAGES = "direct-messages-queue",
+    ORDERS = "orders",
 }

@@ -1,12 +1,10 @@
-import { DEFAULT_RELAYS, merchantProductsFilter, PRODUCT_EVENTS_DB_NAME } from "@/utils/constants";
+import { merchantProductsFilter, DB_NAME } from "@/utils/constants";
 import getDb from "@/services/dbService";
-import { getHomeRelay, getHomeRelaySet, getNdk, getRelayPool } from "@/services/ndkService";
-import { NDKRelay, NDKRelaySet, type NDKEvent, type NDKFilter, type NDKKind } from "@nostr-dev-kit/ndk";
+import { getHomeRelaySet, getNdk, getRelayPool } from "@/services/ndkService";
+import { type NDKEvent } from "@nostr-dev-kit/ndk";
 
 export default async function synchronizeProducts() {
     console.log("[synchronizeProducts]: Synchronizing products...");
-
-    const pubkey = process.env.PUBKEY;
 
     const filter = merchantProductsFilter;
 
@@ -15,7 +13,7 @@ export default async function synchronizeProducts() {
     const homeRelaySet = await getHomeRelaySet();
     const relayPool = await getRelayPool();
 
-    const productsDb = getDb().openDB({ name: PRODUCT_EVENTS_DB_NAME });
+    const productsDb = getDb().openDB({ name: DB_NAME.PRODUCTS });
 
     console.log("[synchronizeProducts]: Clearing out the product events database...");
     productsDb.clearSync(); // Clear out the DB, get ready for a fresh sync
