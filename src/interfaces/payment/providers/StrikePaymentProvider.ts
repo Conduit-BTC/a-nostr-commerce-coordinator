@@ -88,6 +88,20 @@ async function generateQuote(invoiceId: string): Promise<StrikeResponse> {
         })
 
     return { success: true, lightningInvoice };
+}
 
-
+export async function getStrikeInvoiceDetails(invoiceId: string) {
+    try {
+        const status = await fetch(`https://api.strike.me/v1/invoices/${invoiceId}`, {
+            headers: {
+                Accept: 'application/json',
+                Authorization: `Bearer ${process.env.STRIKE_API_KEY}`,
+            }
+        });
+        const data = await status.json();
+        if (data) return data;
+        throw new Error('No data returned from Strike API');
+    } catch (error) {
+        console.error('[getStrikeInvoiceDetails]: ERROR: There was a problem checking Strike invoice details:', error);
+    }
 }

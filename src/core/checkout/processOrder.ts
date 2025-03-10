@@ -4,6 +4,8 @@ import { CHECKOUT_ERROR } from "./checkoutErrors";
 import { createInvoice, type CreateInvoiceResponse } from "@/interfaces/payment/LightningInterface";
 import { sendPaymentRequestMessage } from "@/utils/directMessageUtils";
 import { DEBUG_CTRL } from "dev/utils/debugModeControls";
+import getDb from "@/services/dbService";
+import { DB_NAME } from "@/utils/constants";
 
 export enum ORDER_STATUS {
     PENDING = "pending",
@@ -247,6 +249,10 @@ async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrd
 
     console.log("[finalizeTransaction]: Lightning invoice successfully created for Order ID:", orderId);
 
+    // Save the transaction to the Processing Orders DB
+    getDb().openDB({ name: DB_NAME.PROCESSING_ORDERS }).put(orderId, transaction);
+
+    // Remove from
     if (DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES) console.log("DEBUG MODE ===> [finalizeTransaction]: SUPPRESSING OUTBOUND MESSAGES!");
 
     // Send the invoice to the customer
