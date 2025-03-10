@@ -21,6 +21,6 @@ export default async function subscribeDirectMessages() {
         if (shouldIgnoreEvent(event.id)) return;
 
         console.log(`[subscribeDirectMessages]: Adding direct message to queue: ${event.id}`)
-        getQueue(QUEUE_NAME.DIRECT_MESSAGES).push(event.rawEvent());
+        getQueue(QUEUE_NAME.DIRECT_MESSAGES).push(event.rawEvent()); // Handled via dmEventHandler
     })
 }
