@@ -1,15 +1,10 @@
 import getDb from "@/services/dbService";
 import { OrderUtils, validateOrder, type Order } from "nostr-commerce-schema";
-import { ORDER_STATUS } from "@/core/checkout/processOrder";
 import { NDKEvent, NDKPrivateKeySigner, NDKUser, type NostrEvent } from "@nostr-dev-kit/ndk";
 import { getQueue, QueueRegistry, type QueueItem } from "../Queue";
-import { DB_NAME, QUEUE_NAME } from "@/utils/constants";
-import { ORDER_MESSAGE_TYPE, sendOrderStatusUpdateMessage } from "@/utils/directMessageUtils";
+import { DB_NAME, ORDER_MESSAGE_TYPE, ORDER_STATUS, QUEUE_NAME } from "@/types/enums";
+import { sendOrderStatusUpdateMessage } from "@/utils/directMessageUtils";
 
-export enum ReceivedDirectMessageType {
-    ORDER_CREATION = "order_creation",
-    ORDER_UPDATE = "order_update",
-}
 
 const privkey = process.env.PRIVKEY
 const signer = new NDKPrivateKeySigner(privkey);

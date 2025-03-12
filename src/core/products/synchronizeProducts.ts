@@ -1,7 +1,8 @@
-import { merchantProductsFilter, DB_NAME } from "@/utils/constants";
+import { merchantProductsFilter } from "@/utils/constants";
 import getDb from "@/services/dbService";
 import { getHomeRelaySet, getNdk, getRelayPool } from "@/services/ndkService";
 import { type NDKEvent } from "@nostr-dev-kit/ndk";
+import { DB_NAME } from "@/types/enums";
 
 export default async function synchronizeProducts() {
     console.log("[synchronizeProducts]: Synchronizing products...");

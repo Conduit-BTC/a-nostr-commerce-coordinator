@@ -2,12 +2,12 @@ import subscribeDirectMessages from "@/core/subscribeDirectMessages";
 import synchronizeProducts from "@/core/products/synchronizeProducts";
 import { Queue, QueueRegistry } from "./queues/Queue";
 import getDb from "./services/dbService";
-import { DB_NAME } from "./utils/constants";
 import { ignoredEventIds } from "./utils/shouldIgnoreEvent";
 import { dmQueueConfig, orderQueueConfig } from "./queues";
 import type { Order } from "nostr-commerce-schema";
 import type { NostrEvent } from "@nostr-dev-kit/ndk";
 import isDebugMode, { DEBUG_CTRL } from "../dev/utils/debugModeControls";
+import { DB_NAME } from "./types/enums";
 
 function verifyEnvVars(): void {
     if (!process.env.PUBKEY || !process.env.PRIVKEY) { throw new Error(`[subscribeDirectMessages]: PUBKEY or PRIVKEY not found in .env`) }

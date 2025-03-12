@@ -1,9 +1,10 @@
 import { OrderUtils, type Order } from "nostr-commerce-schema";
-import { getQueue, type QueueItem } from "../Queue";
-import processOrder, { ORDER_STATUS } from "@/core/checkout/processOrder";
+import { type QueueItem } from "../Queue";
+import processOrder from "@/core/checkout/processOrder";
 import { outputAllStoresToConsole } from "dev/utils/outputAllStoresToConsole";
-import { ORDER_MESSAGE_TYPE, sendOrderStatusUpdateMessage } from "@/utils/directMessageUtils";
 import { DEBUG_CTRL } from "dev/utils/debugModeControls";
+import { ORDER_MESSAGE_TYPE, ORDER_STATUS } from "@/types/enums";
+import { sendOrderStatusUpdateMessage } from "@/utils/directMessageUtils";
 
 export async function orderEventHandler(queueItem: QueueItem<{ order: Order, customerPubkey: string }>) {
     try {
@@ -24,7 +25,7 @@ export async function orderEventHandler(queueItem: QueueItem<{ order: Order, cus
                 message: processOrderResult.messageToCustomer || "We ran into a problem while processing your order. We'll contact you shortly to complete your order."
             };
 
-            if (DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES) console.log("DEBUG MODE ===> [finalizeTransaction]: SUPPRESSING OUTBOUND MESSAGES!");
+            if (DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES) console.log("\n===> DEBUG MODE ===> [finalizeTransaction]: SUPPRESSING OUTBOUND MESSAGES!\n");
 
             const sendMessageResponse = DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES ? { success: true, message: "" } : await sendOrderStatusUpdateMessage(failedOrderMessageObj);
             if (!sendMessageResponse.success) throw new Error(`[orderEventHandler]: Failed to send direct message to customer: ${sendMessageResponse.message}`);

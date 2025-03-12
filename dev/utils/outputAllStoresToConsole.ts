@@ -1,6 +1,6 @@
 import { getQueue } from "@/queues/Queue";
 import getDb from "@/services/dbService";
-import { DB_NAME, QUEUE_NAME } from "@/utils/constants";
+import { DB_NAME, QUEUE_NAME } from "@/types/enums";
 import isDebugMode from "dev/utils/debugModeControls";
 
 export function outputAllStoresToConsole() {

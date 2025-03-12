@@ -1,8 +1,9 @@
 import { getNdk } from "@/services/ndkService";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
-import { merchantMessagesFilter, QUEUE_NAME } from "@/utils/constants";
+import { merchantMessagesFilter } from "@/utils/constants";
 import { getQueue } from "@/queues/Queue";
 import { shouldIgnoreEvent } from "@/utils/shouldIgnoreEvent";
+import { QUEUE_NAME } from "@/types/enums";
 
 export default async function subscribeDirectMessages() {
     console.log(`[subscribeDirectMessages]: Listening to Relay Pool for NIP-17 DMs addressed to ${process.env.PUBKEY}...`)

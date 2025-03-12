@@ -1,11 +1,6 @@
 import { processPayment } from "@/core/checkout/processPayment";
 import { getStrikeInvoiceDetails } from "@/interfaces/payment/providers/StrikePaymentProvider";
-
-enum INVOICE_STATUS {
-    PAID = 'PAID',
-    PENDING = 'PENDING',
-    EXPIRED = 'EXPIRED',
-}
+import { INVOICE_STATUS } from "@/types/enums";
 
 export async function handleInvoiceWebhook(req: Request): Promise<void> {
     try {

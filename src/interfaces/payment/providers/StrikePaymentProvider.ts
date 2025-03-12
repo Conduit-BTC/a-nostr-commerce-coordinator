@@ -1,20 +1,13 @@
 import { v4 as uuid } from 'uuid';
-import type { CreateInvoiceResponse } from '../LightningInterface';
 import { DEBUG_CTRL } from 'dev/utils/debugModeControls';
-
-type StrikeResponse = {
-    success: boolean;
-    message?: string;
-    strikeResponseData?: any;
-    lightningInvoice?: string;
-}
+import type { CreateInvoiceResponse, StrikeBaseInvoiceResponse, StrikeQuoteResponse } from '@/types/types';
 
 // See https://docs.strike.me/walkthrough/receiving-payments
 
 const STRIKE_API_KEY = process.env.STRIKE_API_KEY!;
 
 const testPaymentAmount = 0.000000011234;
-if (DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT) console.warn(`DEBUG MODE ===> [StrikePaymentProvider] Using test payment amount of ${testPaymentAmount} Satoshi <<<`);
+if (DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT) console.warn(`\n===> DEBUG MODE ===> [StrikePaymentProvider] Using test payment amount of ${testPaymentAmount} Satoshi <<<\n`);
 
 const headers = new Headers();
 headers.append('Content-Type', 'application/json');
@@ -28,25 +21,22 @@ const requestOptions = {
 
 export async function generateInvoice(orderId: string, amountInSats: number): Promise<CreateInvoiceResponse> {
     try {
-        if (DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT) console.log("DEBUG MODE ===> [generateInvoice]: USING FAKE AMOUNT FOR INVOICE GENERATION!");
+        if (DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT) console.log("\n===> DEBUG MODE ===> [generateInvoice]: USING FAKE AMOUNT FOR INVOICE GENERATION!\n");
 
         const generateBaseInvoiceResponse = await generateBaseInvoice(orderId, DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT ? testPaymentAmount : amountInSats);
         if (!generateBaseInvoiceResponse.success) return { success: false, message: generateBaseInvoiceResponse.message! };
 
+        console.log(">>>>>>>>>> STRIKE RESPONSE:", generateBaseInvoiceResponse);
+
         const generateQuoteResponse = await generateQuote(generateBaseInvoiceResponse.invoiceId!);
         if (!generateQuoteResponse.success) return { success: false, message: generateQuoteResponse.message! };
 
-        return { success: true, lightningInvoice: generateQuoteResponse.lightningInvoice };
+
+        return { success: true, lightningInvoice: generateQuoteResponse.lightningInvoice, invoiceId: generateBaseInvoiceResponse.invoiceId };
     } catch (error) {
         console.error('[StrikePaymentProvider > generateInvoice]: Error creating Strike invoice:', error);
         return { success: false, message: 'Error creating Strike invoice' };
     }
-}
-
-type StrikeBaseInvoiceResponse = {
-    success: boolean;
-    message?: string;
-    invoiceId?: string;
 }
 
 async function generateBaseInvoice(orderId: string, amount: number): Promise<StrikeBaseInvoiceResponse> {
@@ -75,7 +65,7 @@ async function generateBaseInvoice(orderId: string, amount: number): Promise<Str
     }
 }
 
-async function generateQuote(invoiceId: string): Promise<StrikeResponse> {
+async function generateQuote(invoiceId: string): Promise<StrikeQuoteResponse> {
     const options = {
         method: 'POST',
         headers

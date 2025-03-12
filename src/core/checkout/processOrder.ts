@@ -1,83 +1,12 @@
 import { OrderUtils, ProductListingUtils, type Order, type ProductListing } from "nostr-commerce-schema";
 import { getProduct } from "./getProduct";
-import { CHECKOUT_ERROR } from "./checkoutErrors";
-import { createInvoice, type CreateInvoiceResponse } from "@/interfaces/payment/LightningInterface";
+import { createInvoice } from "@/interfaces/payment/LightningInterface";
 import { sendPaymentRequestMessage } from "@/utils/directMessageUtils";
 import { DEBUG_CTRL } from "dev/utils/debugModeControls";
 import getDb from "@/services/dbService";
-import { DB_NAME } from "@/utils/constants";
+import { type CreateInvoiceResponse, type CreateTransactionResponse, type OrderItem, type PerformTransactionPipelineResponse, type ProcessOrderResponse, type Transaction, type TransactionProduct } from "@/types/types";
+import { PAYMENT_TYPE, PAYMENT_STATUS, CHECKOUT_ERROR, DB_NAME } from "@/types/enums";
 
-export enum ORDER_STATUS {
-    PENDING = "pending",
-    CONFIRMED = "confirmed",
-    PROCESSING = "processing",
-    COMPLETED = "completed",
-    CANCELLED = "cancelled",
-}
-
-export enum PAYMENT_STATUS {
-    REQUESTED,
-    PARTIAL,
-    PAID,
-    EXPIRED,
-    ERROR
-}
-
-export enum FULFILLMENT_STATUS {
-    PROCESSING = "processing",
-    SHIPPED = "shipped",
-    DELIVERED = "delivered",
-    EXCEPTION = "exception",
-}
-
-type PerformTransactionPipelineResponse = {
-    success: boolean,
-    messageToCustomer: string,
-    transaction?: Transaction,
-}
-
-type ProcessOrderResponse = {
-    success: boolean;
-    error?: any;
-    messageToCustomer?: string;
-    transaction?: Transaction;
-}
-
-type TransactionProduct = {
-    success: boolean,
-    product?: ProductListing,
-    quantity?: number,
-    pricePerItem?: {
-        amount: string;
-        currency: string;
-        frequency?: string;
-    },
-    error?: CHECKOUT_ERROR,
-    message?: string,
-}
-
-type OrderItem = {
-    productRef: string;
-    quantity: number;
-}
-
-export type Transaction = {
-    orderId: string;
-    items: TransactionProduct[];
-    event: Order;
-    customerPubkey: string;
-    totalPrice: {
-        amount: number;
-        currency: string;
-    },
-    lightningInvoice?: string;
-};
-
-type CreateTransactionResponse = {
-    success: boolean;
-    transaction?: Transaction;
-    messageToCustomer?: string;
-}
 
 export default async function processOrder(event: Order, customerPubkey: string): Promise<ProcessOrderResponse> {
     try {
@@ -242,18 +171,28 @@ async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrd
 
     // TODO: Swap out these DEBUG_MOD_CONTROLS with a sandbox mode that mocks the network, instead. Leaving here for now during early development.
 
-    if (DEBUG_CTRL.USE_MOCK_LIGHTNING_INVOICE) console.log("DEBUG MODE ===> [finalizeTransaction]: USING MOCK LIGHTNING INVOICE");
+    if (DEBUG_CTRL.USE_MOCK_LIGHTNING_INVOICE) console.log("\n===> DEBUG MODE ===> [finalizeTransaction]: USING MOCK LIGHTNING INVOICE\n");
 
     const createInvoiceResponse = DEBUG_CTRL.USE_MOCK_LIGHTNING_INVOICE ? mockCreateInvoiceResponse : await createInvoice(orderId, totalPrice);
     if (!createInvoiceResponse.success) return { success: false, messageToCustomer: createInvoiceResponse.message! };
 
     console.log("[finalizeTransaction]: Lightning invoice successfully created for Order ID:", orderId);
 
+    transaction.payment = {
+        amount: totalPrice,
+        currency: "USD", // TODO: USD is hard-coded. Change it to the currency of the Product.
+        type: PAYMENT_TYPE.LIGHTNING_BTC,
+        status: PAYMENT_STATUS.REQUESTED,
+        details: {
+            invoiceId: orderId,
+            lightningInvoice: createInvoiceResponse.lightningInvoice!,
+        }
+    }
+
     // Save the transaction to the Processing Orders DB
     getDb().openDB({ name: DB_NAME.PROCESSING_ORDERS }).put(orderId, transaction);
 
-    // Remove from
-    if (DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES) console.log("DEBUG MODE ===> [finalizeTransaction]: SUPPRESSING OUTBOUND MESSAGES!");
+    if (DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES) console.log("\n===> DEBUG MODE ===> [finalizeTransaction]: SUPPRESSING OUTBOUND MESSAGES!\n");
 
     // Send the invoice to the customer
     const paymentRequestMessageObj = { recipient: customerPubkey, orderId, amount: totalPrice.toString(), lnInvoice: createInvoiceResponse.lightningInvoice! };
@@ -262,7 +201,6 @@ async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrd
 
     console.log(`[finalizeTransaction]: Payment request sent to ${customerPubkey} for ${orderId}`);
     return { success: true, transaction };
-
 }
 
 const mockCreateInvoiceResponse: CreateInvoiceResponse = {

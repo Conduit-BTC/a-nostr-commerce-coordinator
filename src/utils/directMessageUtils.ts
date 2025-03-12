@@ -1,20 +1,8 @@
-import type { FULFILLMENT_STATUS, ORDER_STATUS } from "@/core/checkout/processOrder";
 import { getNdk } from "@/services/ndkService";
+import { NIP17_KIND, ORDER_MESSAGE_TYPE, type FULFILLMENT_STATUS, type ORDER_STATUS } from "@/types/enums";
+import type { PaymentRequestArgs, ReceiptArgs } from "@/types/types";
 import { NDKEvent, NDKPrivateKeySigner, NDKRelay, NDKUser } from "@nostr-dev-kit/ndk";
 import { generateSecretKey, getPublicKey } from "nostr-tools";
-
-export enum NIP17_KIND {
-    MESSAGE = 14,
-    ORDER_PROCESSING = 16,
-    RECEIPT = 17,
-}
-
-export enum ORDER_MESSAGE_TYPE {
-    CREATION = "1",
-    PAYMENT_REQUEST = "2",
-    STATUS_UPDATE = "3",
-    SHIPPING_UPDATE = "4",
-}
 
 export async function sendDirectMessage(recipient: string, message: string): Promise<{ success: boolean, message: string }> {
     try {
@@ -62,13 +50,6 @@ export async function sendOrderStatusUpdateMessage({ recipient, orderId, status,
     }
 }
 
-type PaymentRequestArgs = {
-    recipient: string;
-    orderId: string;
-    amount: string;
-    lnInvoice: string;
-}
-
 export async function sendPaymentRequestMessage({ recipient, orderId, amount, lnInvoice }: PaymentRequestArgs): Promise<{ success: boolean, message: string }> {
     try {
         const kind = NIP17_KIND.ORDER_PROCESSING;
@@ -90,13 +71,6 @@ export async function sendPaymentRequestMessage({ recipient, orderId, amount, ln
         console.error(error);
         return { success: false, message: "There was an error while trying to send a payment request." };
     }
-};
-
-type ReceiptArgs = {
-    recipient: string;
-    orderId: string;
-    lnInvoice: string;
-    lnPaymentHash: string;
 };
 
 export async function sendReceiptMessage({ recipient, orderId, lnInvoice, lnPaymentHash }: ReceiptArgs): Promise<{ success: boolean, message: string }> {
