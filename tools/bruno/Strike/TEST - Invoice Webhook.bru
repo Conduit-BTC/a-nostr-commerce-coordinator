@@ -1,0 +1,20 @@
+meta {
+  name: TEST - Invoice Webhook
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{WEBHOOK_URL}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "eventType": "invoice.updated",
+    "data": {
+      "entityId": "TEST!"
+    }
+  }
+}

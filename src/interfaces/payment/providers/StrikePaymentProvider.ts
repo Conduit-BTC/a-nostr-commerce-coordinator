@@ -90,7 +90,7 @@ export async function getStrikeInvoiceDetails(invoiceId: string) {
         });
         const data = await status.json();
         if (data) return data;
-        throw new Error('No data returned from Strike API');
+        else return null;
     } catch (error) {
         console.error('[getStrikeInvoiceDetails]: ERROR: There was a problem checking Strike invoice details:', error);
     }

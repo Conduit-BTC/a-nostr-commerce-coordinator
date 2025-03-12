@@ -21,3 +21,9 @@ export const merchantMessagesFilter: NDKFilter = {
     kinds: [1059 as NDKKind],
     '#p': [pubkey!]
 }
+
+export const invoiceWebhookDetails = {
+    port: 3333,
+    path: "/webhook/invoice",
+    method: "POST"
+}

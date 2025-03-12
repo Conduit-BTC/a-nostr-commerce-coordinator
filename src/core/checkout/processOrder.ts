@@ -184,13 +184,16 @@ async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrd
         type: PAYMENT_TYPE.LIGHTNING_BTC,
         status: PAYMENT_STATUS.REQUESTED,
         details: {
-            invoiceId: orderId,
+            invoiceId: createInvoiceResponse.invoiceId!,
             lightningInvoice: createInvoiceResponse.lightningInvoice!,
         }
     }
 
     // Save the transaction to the Processing Orders DB
     getDb().openDB({ name: DB_NAME.PROCESSING_ORDERS }).put(orderId, transaction);
+    getDb().openDB({ name: DB_NAME.PROCESSING_ORDERS_INVOICE_ID_INDEX }).put(transaction.payment!.details.invoiceId, orderId);
+
+    console.log(`[finalizeTransaction]: Transaction saved to Processing Orders DB under key ${orderId}. Indexed by invoice ID ${transaction.payment!.details.invoiceId}`);
 
     if (DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES) console.log("\n===> DEBUG MODE ===> [finalizeTransaction]: SUPPRESSING OUTBOUND MESSAGES!\n");
 

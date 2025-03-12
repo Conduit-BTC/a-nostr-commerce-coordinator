@@ -57,9 +57,10 @@ export enum QUEUE_NAME {
 }
 
 export enum DB_NAME {
-    PRODUCTS = "products-db",
-    PROCESSING_ORDERS = "processing-orders-db",
-    SUCCESSFUL_ORDERS = "successful-orders-db",
-    FAILED_ORDERS = "failed-orders-db",
-    IGNORED_EVENTS = "ignored-events-db",
+    PRODUCTS = "products-db", // key: productId, value: ProductListing
+    PROCESSING_ORDERS = "processing-orders-db", // key: orderId, value: Transaction
+    PROCESSING_ORDERS_INVOICE_ID_INDEX = "processing-orders-invoice-id-index", // key: invoiceId, value: orderId
+    SUCCESSFUL_ORDERS = "successful-orders-db", // key: orderId, value: Transaction
+    FAILED_ORDERS = "failed-orders-db", // key: orderId, value: Transaction
+    IGNORED_EVENTS = "ignored-events-db",   // key: eventId, value: NostrEvent
 }

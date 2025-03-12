@@ -8,6 +8,7 @@ import type { Order } from "nostr-commerce-schema";
 import type { NostrEvent } from "@nostr-dev-kit/ndk";
 import isDebugMode, { DEBUG_CTRL } from "../dev/utils/debugModeControls";
 import { DB_NAME } from "./types/enums";
+import { startWebhookServer } from "./server/startServer";
 
 function verifyEnvVars(): void {
     if (!process.env.PUBKEY || !process.env.PRIVKEY) { throw new Error(`[subscribeDirectMessages]: PUBKEY or PRIVKEY not found in .env`) }
@@ -58,6 +59,7 @@ export default async function startup(): Promise<void> {
 
         // TODO: Fetch Receipt events from the Relay Pool and store them in the database
 
+        startWebhookServer();
         await synchronizeProducts();
         await subscribeDirectMessages();
     } catch (error) {

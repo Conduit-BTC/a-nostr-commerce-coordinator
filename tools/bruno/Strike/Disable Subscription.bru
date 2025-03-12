@@ -1,0 +1,28 @@
+meta {
+  name: Disable Subscription
+  type: http
+  seq: 3
+}
+
+post {
+  url: https://api.strike.me/v1/subscriptions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{STRIKE_API_KEY}}
+}
+
+body:json {
+  {
+    "webhookUrl": "{{WEBHOOK_URL}}",
+    "webhookVersion": "v1",
+    "secret": "{{STRIKE_INVOICE_WEBHOOK_SECRET}}",
+    "enabled": false,
+    "eventTypes": [
+      "invoice.created",
+      "invoice.updated"
+    ]
+  }
+}

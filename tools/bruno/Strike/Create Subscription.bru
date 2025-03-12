@@ -1,0 +1,28 @@
+meta {
+  name: Create Subscription
+  type: http
+  seq: 1
+}
+
+post {
+  url: https://api.strike.me/v1/subscriptions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{STRIKE_API_KEY}}
+}
+
+body:json {
+  {
+    "webhookUrl": "{{WEBHOOK_URL}}",
+    "webhookVersion": "v1",
+    "secret": "{{STRIKE_INVOICE_WEBHOOK_SECRET}}",
+    "enabled": true,
+    "eventTypes": [
+      "invoice.created",
+      "invoice.updated"
+    ]
+  }
+}
