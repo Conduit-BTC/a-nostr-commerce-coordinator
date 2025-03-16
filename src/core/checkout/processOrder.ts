@@ -8,7 +8,6 @@ import {
     type CreateInvoiceResponse,
     type CreateTransactionResponse,
     type OrderItem,
-    type PerformTransactionPipelineResponse,
     type ProcessOrderResponse,
     type Transaction,
     type TransactionProduct
@@ -188,7 +187,7 @@ async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrd
 
     // TODO: Handle free, zero-cost transactions
     // Send the invoice to the customer
-    const paymentRequestMessageObj = { recipient: customerPubkey, orderId, amount: totalPrice.toString(), lnInvoice: createInvoiceResponse.lightningInvoice! };
+    const paymentRequestMessageObj = { recipient: customerPubkey, orderId, amount: totalPrice.amount.toString(), lnInvoice: createInvoiceResponse.lightningInvoice! };
     const sendMessageResponse = DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES ? { success: true, message: "" } : await sendPaymentRequestMessage(paymentRequestMessageObj);
     if (!sendMessageResponse.success) return { success: false, messageToCustomer: sendMessageResponse.message! };
 

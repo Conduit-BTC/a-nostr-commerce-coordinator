@@ -64,7 +64,6 @@ export type Transaction = {
         cancelled_at?: number;
     }
     payment?: Payment;
-    receiptEvent?: PaymentReceipt;
 };
 
 export type CreateTransactionResponse = {
@@ -96,6 +95,7 @@ export type StrikeBaseInvoiceResponse = {
 export type ReceiptArgs = {
     recipient: string;
     orderId: string;
+    amount: string;
     lnInvoice: string;
     lnPaymentHash: string;
 };

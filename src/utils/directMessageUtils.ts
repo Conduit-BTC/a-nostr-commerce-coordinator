@@ -73,13 +73,14 @@ export async function sendPaymentRequestMessage({ recipient, orderId, amount, ln
     }
 };
 
-export async function sendReceiptMessage({ recipient, orderId, lnInvoice, lnPaymentHash }: ReceiptArgs): Promise<{ success: boolean, message: string }> {
+export async function sendReceiptMessage({ recipient, orderId, amount, lnInvoice, lnPaymentHash }: ReceiptArgs): Promise<{ success: boolean, message: string }> {
     try {
         const kind = NIP17_KIND.RECEIPT;
         const tags = [
             ["subject", "order-payment"],
             ["order", orderId],
-            ["payment", "lightning", lnInvoice, lnPaymentHash]
+            ["payment", "lightning", lnInvoice, lnPaymentHash],
+            ["amount", amount]
         ];
 
         const event = await createNip17GiftWrapEvent(kind, recipient, "Payment confirmation details", undefined, tags);
