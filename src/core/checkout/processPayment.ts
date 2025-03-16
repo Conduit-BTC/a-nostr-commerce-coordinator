@@ -16,6 +16,7 @@ export async function processPayment(invoiceId: string): Promise<void> {
     console.log(`[processPayment]: Verifying transaction details...`);
     console.log(transaction);
 
+    transaction.timeline.paid_at = Date.now();
     transaction.payment!.status = PAYMENT_STATUS.PAID;
 }
 

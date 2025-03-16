@@ -1,4 +1,4 @@
-import { type ProductListing, type Order } from "nostr-commerce-schema";
+import { type ProductListing, type Order, type PaymentReceipt } from "nostr-commerce-schema";
 import type { CHECKOUT_ERROR, PAYMENT_STATUS, PAYMENT_TYPE } from "./enums";
 
 export type PerformTransactionPipelineResponse = {
@@ -45,7 +45,6 @@ export type Payment = {
     status: PAYMENT_STATUS;
 
     error?: string;
-    paymentTimestamp?: number;
 }
 
 export type Transaction = {
@@ -57,7 +56,15 @@ export type Transaction = {
         amount: number;
         currency: string;
     },
+    timeline: {
+        created_at: number;
+        paid_at?: number;
+        shipped_at?: number;
+        delivered_at?: number;
+        cancelled_at?: number;
+    }
     payment?: Payment;
+    receiptEvent?: PaymentReceipt;
 };
 
 export type CreateTransactionResponse = {

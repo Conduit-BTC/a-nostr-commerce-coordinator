@@ -6,8 +6,9 @@ import type { CreateInvoiceResponse, StrikeBaseInvoiceResponse, StrikeQuoteRespo
 
 const STRIKE_API_KEY = process.env.STRIKE_API_KEY!;
 
-const testPaymentAmount = 0.000000011234;
-if (DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT) console.warn(`\n===> DEBUG MODE ===> [StrikePaymentProvider] Using test payment amount of ${testPaymentAmount} Satoshi <<<\n`);
+const testPriceObj = { amount: 0.000000011234, currency: 'BTC' };
+
+if (DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT) console.warn(`\n===> DEBUG MODE ===> [StrikePaymentProvider] Using test payment amount of 1 Satoshi <<<\n`);
 
 const headers = new Headers();
 headers.append('Content-Type', 'application/json');
@@ -19,18 +20,15 @@ const requestOptions = {
     headers
 }
 
-export async function generateInvoice(orderId: string, amountInSats: number): Promise<CreateInvoiceResponse> {
+export async function generateInvoice(orderId: string, priceObj: { amount: number, currency: string }): Promise<CreateInvoiceResponse> {
     try {
         if (DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT) console.log("\n===> DEBUG MODE ===> [generateInvoice]: USING FAKE AMOUNT FOR INVOICE GENERATION!\n");
 
-        const generateBaseInvoiceResponse = await generateBaseInvoice(orderId, DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT ? testPaymentAmount : amountInSats);
+        const generateBaseInvoiceResponse = await generateBaseInvoice(orderId, DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT ? testPriceObj : priceObj);
         if (!generateBaseInvoiceResponse.success) return { success: false, message: generateBaseInvoiceResponse.message! };
-
-        console.log(">>>>>>>>>> STRIKE RESPONSE:", generateBaseInvoiceResponse);
 
         const generateQuoteResponse = await generateQuote(generateBaseInvoiceResponse.invoiceId!);
         if (!generateQuoteResponse.success) return { success: false, message: generateQuoteResponse.message! };
-
 
         return { success: true, lightningInvoice: generateQuoteResponse.lightningInvoice, invoiceId: generateBaseInvoiceResponse.invoiceId };
     } catch (error) {
@@ -39,13 +37,15 @@ export async function generateInvoice(orderId: string, amountInSats: number): Pr
     }
 }
 
-async function generateBaseInvoice(orderId: string, amount: number): Promise<StrikeBaseInvoiceResponse> {
+async function generateBaseInvoice(orderId: string, priceObj: { amount: number, currency: string }): Promise<StrikeBaseInvoiceResponse> {
     try {
+        const { amount, currency } = priceObj;
+
         const body = JSON.stringify({
             correlationId: uuid(),
             description: 'Invoice for ' + orderId,
             amount: {
-                currency: 'BTC',
+                currency: currency,
                 amount,
             },
         })

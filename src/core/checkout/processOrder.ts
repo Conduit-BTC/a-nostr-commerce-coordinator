@@ -1,40 +1,25 @@
-import { OrderUtils, ProductListingUtils, type Order, type ProductListing } from "nostr-commerce-schema";
+import { OrderUtils, ProductListingUtils, type Order } from "nostr-commerce-schema";
 import { getProduct } from "./getProduct";
 import { createInvoice } from "@/interfaces/payment/LightningInterface";
 import { sendPaymentRequestMessage } from "@/utils/directMessageUtils";
 import { DEBUG_CTRL } from "dev/utils/debugModeControls";
 import getDb from "@/services/dbService";
-import { type CreateInvoiceResponse, type CreateTransactionResponse, type OrderItem, type PerformTransactionPipelineResponse, type ProcessOrderResponse, type Transaction, type TransactionProduct } from "@/types/types";
+import {
+    type CreateInvoiceResponse,
+    type CreateTransactionResponse,
+    type OrderItem,
+    type PerformTransactionPipelineResponse,
+    type ProcessOrderResponse,
+    type Transaction,
+    type TransactionProduct
+} from "@/types/types";
 import { PAYMENT_TYPE, PAYMENT_STATUS, CHECKOUT_ERROR, DB_NAME } from "@/types/enums";
+import { exposeForTesting } from "@/utils/exposeForTesting";
 
 
 export default async function processOrder(event: Order, customerPubkey: string): Promise<ProcessOrderResponse> {
     try {
-        const performTransactionPipelineResponse = await performTransactionPipeline(event, customerPubkey);
-        if (!performTransactionPipelineResponse.success) {
-            return {
-                success: false,
-                messageToCustomer: performTransactionPipelineResponse.messageToCustomer,
-            };
-        }
-
-        // TODO: Set up a webhook to listen for payment events
-        // TODO: When payment is received, mark the Order as "completed" and send a confirmation to the Customer
-        // TODO: When payment is received, start the fulfillment process
-
-        return {
-            success: true,
-            messageToCustomer: "Order successfully processed",
-        };
-    } catch (error) {
-        console.error("Product sync workflow failed:", error);
-        return { success: false, messageToCustomer: "Order processing failed. Contact Merchant." };
-    }
-}
-
-async function performTransactionPipeline(event: Order, customerPubkey: string): Promise<PerformTransactionPipelineResponse> {
-    try {
-        console.log("[verifyNewOrder]: Verifying new order...");
+        console.log("[verifyNewOrder]: Processing new order...");
 
         // TODO: Shipping steps
 
@@ -45,8 +30,8 @@ async function performTransactionPipeline(event: Order, customerPubkey: string):
         };
 
         const { transaction } = createTransactionResponse;
-        const validateTransactionResponse = validateTransaction(transaction!);
 
+        const validateTransactionResponse = validateTransaction(transaction!);
         if (!validateTransactionResponse.success) {
             console.error("[verifyNewOrder]: Issue with transaction in ", transaction!.orderId);
             return {
@@ -73,9 +58,10 @@ async function performTransactionPipeline(event: Order, customerPubkey: string):
             messageToCustomer: "Order successfully processed",
             transaction,
         };
+
     } catch (error) {
-        console.error("performTransactionPipeline failed:", error);
-        return { success: false, messageToCustomer: "We're sorry, something went wrong with the checkout process. We'll contact you shortly to finalize this order." };
+        console.error("Product sync workflow failed:", error);
+        return { success: false, messageToCustomer: "Order processing failed. Contact Merchant." };
     }
 }
 
@@ -93,17 +79,26 @@ async function createTransaction(order: Order, customerPubkey: string): Promise<
         };
     }
 
-    const transaction = { orderId, items: transactionItems, event: order, customerPubkey } as Transaction;
+    // We're only supporting USD base currency for now. This was assured in validateTransaction(). This will need to be updated to support multiple currencies.
+    const amount = transactionItems.reduce((total, item) => {
+        const price = parseFloat(item.pricePerItem!.amount) * item.quantity!;
+        return total + price;
+    }, 0.0);
+
+    const transaction = {
+        orderId,
+        items: transactionItems,
+        event: order,
+        customerPubkey,
+        timeline: { created_at: Date.now() },
+        totalPrice: { amount, currency: "USD" } // TODO: USD is hard-coded. Change it to the currency of the Product.
+    } as Transaction;
+
     return { success: true, transaction };
 }
 
 async function prepareTransactionItems(orderItems: OrderItem[]): Promise<{ transactionItems: TransactionProduct[], missingItems: TransactionProduct[] }> {
     const itemPromises: Promise<TransactionProduct>[] = orderItems.map(async (item) => {
-        let totalPrice = {
-            amount: 0.0,
-            currency: null,
-        }; // TODO: This is brittle at the moment, since it assumes all products are in the same currency. An easy assumption to make, but the protocol allows each Product to have a different currency, so this could cause a problem.
-
         const productId = OrderUtils.getProductIdFromOrderItem(item);
         const product = await getProduct(productId);
 
@@ -137,7 +132,7 @@ function validateTransaction(transaction: Transaction): ProcessOrderResponse {
     const { items } = transaction;
 
     // Price Check
-    // We're only supporting USD for now. This will need to be updated to support multiple currencies.
+    // TODO: This is brittle at the moment, since it assumes all products are in the same currency. An easy assumption to make, but the protocol allows each Product to have a different currency, so this could cause a problem.
     const isOnlyUsd = items.every((item) => item.pricePerItem!.currency === "USD");
     if (!isOnlyUsd) return { success: false, messageToCustomer: "Sorry, we only support USD as the base Product price currency at the moment." };
 
@@ -161,13 +156,7 @@ function validateTransaction(transaction: Transaction): ProcessOrderResponse {
 }
 
 async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrderResponse> {
-    const { items, orderId, customerPubkey } = transaction;
-
-    // We're only supporting USD base currency for now. This was assured in validateTransaction(). This will need to be updated to support multiple currencies.
-    const totalPrice = items.reduce((total, item) => {
-        const price = parseFloat(item.pricePerItem!.amount) * item.quantity!;
-        return total + price;
-    }, 0.0);
+    const { totalPrice, orderId, customerPubkey } = transaction;
 
     // TODO: Swap out these DEBUG_MOD_CONTROLS with a sandbox mode that mocks the network, instead. Leaving here for now during early development.
 
@@ -179,8 +168,8 @@ async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrd
     console.log("[finalizeTransaction]: Lightning invoice successfully created for Order ID:", orderId);
 
     transaction.payment = {
-        amount: totalPrice,
-        currency: "USD", // TODO: USD is hard-coded. Change it to the currency of the Product.
+        amount: totalPrice!.amount,
+        currency: totalPrice!.currency,
         type: PAYMENT_TYPE.LIGHTNING_BTC,
         status: PAYMENT_STATUS.REQUESTED,
         details: {
@@ -190,13 +179,14 @@ async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrd
     }
 
     // Save the transaction to the Processing Orders DB
-    getDb().openDB({ name: DB_NAME.PROCESSING_ORDERS }).put(orderId, transaction);
-    getDb().openDB({ name: DB_NAME.PROCESSING_ORDERS_INVOICE_ID_INDEX }).put(transaction.payment!.details.invoiceId, orderId);
+    await getDb().openDB({ name: DB_NAME.PROCESSING_ORDERS }).put(orderId, transaction);
+    await getDb().openDB({ name: DB_NAME.PROCESSING_ORDERS_INVOICE_ID_INDEX }).put(transaction.payment!.details.invoiceId, orderId);
 
     console.log(`[finalizeTransaction]: Transaction saved to Processing Orders DB under key ${orderId}. Indexed by invoice ID ${transaction.payment!.details.invoiceId}`);
 
     if (DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES) console.log("\n===> DEBUG MODE ===> [finalizeTransaction]: SUPPRESSING OUTBOUND MESSAGES!\n");
 
+    // TODO: Handle free, zero-cost transactions
     // Send the invoice to the customer
     const paymentRequestMessageObj = { recipient: customerPubkey, orderId, amount: totalPrice.toString(), lnInvoice: createInvoiceResponse.lightningInvoice! };
     const sendMessageResponse = DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES ? { success: true, message: "" } : await sendPaymentRequestMessage(paymentRequestMessageObj);
@@ -208,5 +198,10 @@ async function finalizeTransaction(transaction: Transaction): Promise<ProcessOrd
 
 const mockCreateInvoiceResponse: CreateInvoiceResponse = {
     success: true,
-    lightningInvoice: "lnbc1111_MOCK_INVOICE"
+    lightningInvoice: "lnbc1111_MOCK_INVOICE",
+    invoiceId: "MOCK_INVOICE_ID"
 }
+
+// exposeForTesting({ prepareTransactionItems, validateTransaction, finalizeTransaction });
+export const { prepareTransactionItems: prepareTransactionItems_TEST } =
+    exposeForTesting({ prepareTransactionItems });
