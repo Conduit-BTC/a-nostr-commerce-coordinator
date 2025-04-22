@@ -1,21 +1,13 @@
-import { merchantShippingOptionsFilter, pubkey } from "@/utils/constants";
+import { pubkey } from "@/utils/constants";
 import getDb from "@/services/dbService";
-import { getHomeRelaySet, getNdk, getRelayPool } from "@/services/ndkService";
-import { type NDKEvent } from "@nostr-dev-kit/ndk";
+import { getNdk } from "@/services/ndkService";
 import { DB_NAME } from "@/types/enums";
-import { ProductListingUtils, ShippingOptionUtils, type ProductListing, type ShippingOption } from "nostr-commerce-schema";
+import { ProductListingUtils, ShippingOptionUtils, type ProductListing } from "nostr-commerce-schema";
 
 export default async function synchronizeShippingOptions() {
-    // TODO: We're currently en-masse fetching all ShippingOptions, but instead we want to fetch all ShippingOption events specifically referenced on the ProductListings stored in the ProductDB.
-
     console.log("[synchronizeShippingOptions]: Synchronizing shipping options...");
 
-    const filter = merchantShippingOptionsFilter;
-
     const ndk = await getNdk();
-
-    const homeRelaySet = await getHomeRelaySet();
-    const relayPool = await getRelayPool();
 
     const productsDb = getDb().openDB({ name: DB_NAME.PRODUCTS });
     const shippingOptionsDb = getDb().openDB({ name: DB_NAME.SHIPPING_OPTIONS })
@@ -38,7 +30,7 @@ export default async function synchronizeShippingOptions() {
             console.error("[synchronizeShippingOptions]: Malformed ShippingOption: ", ref);
             return
         };
-        const event = await ProductListingUtils.fetchShippingOptionEvent(id, pubkey!, ndk);
+        const event = await ShippingOptionUtils.fetchShippingOptionEvent(id, pubkey!, ndk);
         if (event) await shippingOptionsDb.put(`nostr-shipping-options-event:${event.rawEvent().id}`, event.rawEvent());
     })
 
