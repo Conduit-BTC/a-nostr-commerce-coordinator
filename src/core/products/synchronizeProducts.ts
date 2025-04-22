@@ -3,6 +3,7 @@ import getDb from "@/services/dbService";
 import { getHomeRelaySet, getNdk, getRelayPool } from "@/services/ndkService";
 import { type NDKEvent } from "@nostr-dev-kit/ndk";
 import { DB_NAME } from "@/types/enums";
+import { ProductListingUtils, ShippingOptionUtils, type ProductListing, type ShippingOption } from "nostr-commerce-schema";
 
 export default async function synchronizeProducts() {
     console.log("[synchronizeProducts]: Synchronizing products...");
@@ -15,10 +16,15 @@ export default async function synchronizeProducts() {
     const relayPool = await getRelayPool();
 
     const productsDb = getDb().openDB({ name: DB_NAME.PRODUCTS });
+    const shippingOptionsDb = getDb().openDB({ name: DB_NAME.SHIPPING_OPTIONS })
 
     console.log("[synchronizeProducts]: Clearing out the product events database...");
     productsDb.clearSync(); // Clear out the DB, get ready for a fresh sync
     console.log("[synchronizeProducts]: Product events database cleared");
+
+    console.log("[synchronizeProducts]: Clearing out the shipping option events database...");
+    shippingOptionsDb.clearSync(); // Clear out the DB, get ready for a fresh sync
+    console.log("[synchronizeProducts]: Shipping option events database cleared");
 
     const homeRelaySubscription = ndk.subscribe(filter, { closeOnEose: false }, homeRelaySet);
 
@@ -40,9 +46,11 @@ export default async function synchronizeProducts() {
         // This is simply mirroring the home relay event to the local database, then broadcasting it out to the relay pool
         console.log("[synchronizeProducts]: Storing product event in local database...");
         await productsDb.put(`nostr-product-event:${productId}`, product);
-        console.log("[synchronizeProducts]: Product event stored in local database");
-
-        console.log(await productsDb.get(`nostr-product-event:${productId}`))
+        const shippingOptions = ProductListingUtils.getProductShippingOptions(product as unknown as ProductListing);
+        if (shippingOptions) {
+            shippingOptions.map((option: ShippingOption) => { })
+        }
+        console.log("[synchronizeProducts]: Product event stored in local database: " + `nostr-product-event:${productId}`);
 
         if (relayPool.size === 0) {
             console.warn("[synchronizeProducts]: WARN: No relays in relay pool");

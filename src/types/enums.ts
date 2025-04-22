@@ -58,6 +58,7 @@ export enum QUEUE_NAME {
 
 export enum DB_NAME {
     PRODUCTS = "products-db", // key: productId, value: ProductListing
+    SHIPPING_OPTIONS = "shipping-options-db", // key: shippingOptionId, value: ShippingOption
     PROCESSING_ORDERS = "processing-orders-db", // key: orderId, value: Transaction
     PROCESSING_ORDERS_INVOICE_ID_INDEX = "processing-orders-invoice-id-index", // key: invoiceId, value: orderId
     SUCCESSFUL_ORDERS = "successful-orders-db", // key: orderId, value: Transaction

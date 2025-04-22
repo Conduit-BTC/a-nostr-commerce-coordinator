@@ -4,9 +4,14 @@ export const DEFAULT_RELAYS = [
     "ws://localhost:7777"
 ];
 
-const pubkey = process.env.PUBKEY;
+export const pubkey = process.env.PUBKEY;
 
 export const merchantProductsFilter: NDKFilter = {
+    kinds: [30402 as NDKKind],
+    authors: [pubkey!]
+}
+
+export const merchantShippingOptionsFilter: NDKFilter = {
     kinds: [30402 as NDKKind],
     authors: [pubkey!]
 }
