@@ -6,6 +6,7 @@ import isDebugMode from "dev/utils/debugModeControls";
 export function outputAllStoresToConsole() {
     if (!isDebugMode) return;
     const productsDb = getDb().openDB({ name: DB_NAME.PRODUCTS });
+    const shippingOptionsDb = getDb().openDB({ name: DB_NAME.SHIPPING_OPTIONS })
     const processingOrdersDb = getDb().openDB({ name: DB_NAME.PROCESSING_ORDERS });
     const successfulOrdersDb = getDb().openDB({ name: DB_NAME.SUCCESSFUL_ORDERS });
     const failedOrdersDb = getDb().openDB({ name: DB_NAME.FAILED_ORDERS });
@@ -18,6 +19,7 @@ export function outputAllStoresToConsole() {
 
     console.log('\n=== DATABASES\n');
     console.log('Current keys in Products database: ', Array.from(productsDb.getKeys()));
+    console.log('Current keys in Shipping Options database: ', Array.from(shippingOptionsDb.getKeys()));
     console.log('Current keys in Processing Orders database: ', Array.from(processingOrdersDb.getKeys()));
     console.log('Current keys in Successful Orders database: ', Array.from(successfulOrdersDb.getKeys()));
     console.log('Current keys in Failed Orders database: ', Array.from(failedOrdersDb.getKeys()));

@@ -9,6 +9,7 @@ import type { NostrEvent } from "@nostr-dev-kit/ndk";
 import isDebugMode, { DEBUG_CTRL } from "../dev/utils/debugModeControls";
 import { DB_NAME } from "./types/enums";
 import { startWebhookServer } from "./server/startServer";
+import synchronizeShippingOptions from "./core/shippingOptions/synchronizeShippingOptions";
 
 function verifyEnvVars(): void {
     if (!process.env.PUBKEY || !process.env.PRIVKEY) { throw new Error(`[subscribeDirectMessages]: PUBKEY or PRIVKEY not found in .env`) }
@@ -61,6 +62,7 @@ export default async function startup(): Promise<void> {
 
         startWebhookServer();
         await synchronizeProducts();
+        await synchronizeShippingOptions();
         await subscribeDirectMessages();
     } catch (error) {
         console.error(`Startup failed: ${error}`);
