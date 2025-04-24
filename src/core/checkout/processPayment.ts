@@ -27,6 +27,8 @@ export async function processPayment(invoiceId: string): Promise<void> {
 
     console.log(`[processPayment]: Updating transaction in the database..`);
     getDb().openDB({ name: DB_NAME.PROCESSING_ORDERS }).put(orderId, transaction);
+
+    // TODO: Send this order to the Fulfillment queue
 }
 
 function getTransactionFromInvoice(invoiceId: string): Promise<{ transaction: Transaction; orderId: string; } | null> {
@@ -35,6 +37,6 @@ function getTransactionFromInvoice(invoiceId: string): Promise<{ transaction: Tr
     if (!orderId) Promise.resolve(null);
     const transaction = getDb().openDB({ name: DB_NAME.PROCESSING_ORDERS }).get(orderId);
     if (!transaction) Promise.resolve(null);
-    return Promise.resolve({ transaction, orderId });
 
+    return Promise.resolve({ transaction, orderId });
 }
