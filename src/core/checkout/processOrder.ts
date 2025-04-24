@@ -14,6 +14,7 @@ import {
 } from "@/types/types";
 import { PAYMENT_TYPE, PAYMENT_STATUS, CHECKOUT_ERROR, DB_NAME } from "@/types/enums";
 import { exposeForTesting } from "@/utils/exposeForTesting";
+import { calculateVariableShippingCost } from "@/interfaces/fulfillment/calculateVariableShippingCost";
 
 
 export default async function processOrder(event: Order, customerPubkey: string): Promise<ProcessOrderResponse> {
@@ -78,11 +79,41 @@ async function createTransaction(order: Order, customerPubkey: string): Promise<
         };
     }
 
-    // We're only supporting USD base currency for now. This was assured in validateTransaction(). This will need to be updated to support multiple currencies.
-    const amount = transactionItems.reduce((total, item) => {
+    /*
+    ** Shipping 
+    */
+
+    const orderShippingDetails = OrderUtils.getOrderContactDetails(order);
+
+    // TODO: Support digital deliveries
+    if (!orderShippingDetails || !orderShippingDetails.address) return { success: false, messageToCustomer: "[Commerce Coordinator Bot]: It looks like you didn't include a shipping address. I cannot process your order without one." };
+
+    let variableShippingCost = true; // TODO: <<< This is currently hard-coded. This will only work for Merchants that 100% always want variable shipping cost calculations. This is great for us, now, but must be updated when we're ready to release for other Merchants.
+
+    // const orderShippingOptionRef: string | null = OrderUtils.getOrderShipping(order);
+    // if (orderShippingOptionRef) {
+    // TODO: Robustly check whether the delivery address is supported in the selected shipping zone
+    //     const shippingOptionsDb = getDb().openDB({ name: DB_NAME.SHIPPING_OPTIONS })
+    //     const shippingOptionEvent = shippingOptionsDb.getEntry("nostr-shipping-option-event:" + orderShippingOptionRef.split(":")[2]);
+    //     if (!shippingOptionEvent) variableShippingCost = true;
+    // TODO: Attempt an explicit ShippingOptionUtils.fetchShippingOptionEvent()
+    // } else variableShippingCost = true;
+
+    let shippingCost = 0.0; // USD
+
+    if (variableShippingCost) {
+        const a = await calculateVariableShippingCost(orderShippingDetails.address, transactionItems);
+        if (a.error) throw new Error(`[processOrder > calculateVariableShippingCost]: There was an issue calculating variable shipping cost. Status: ${a.error.status} - Message:${a.error.message}`)
+        shippingCost += a.cost!;
+    }
+
+    // TODO: We're only supporting USD base currency for now. This was assured in validateTransaction(). This will need to be updated to support multiple currencies.
+    const itemsCost = transactionItems.reduce((total, item) => {
         const price = parseFloat(item.pricePerItem!.amount) * item.quantity!;
         return total + price;
     }, 0.0);
+
+    const amount = itemsCost + shippingCost;
 
     const transaction = {
         orderId,
@@ -90,7 +121,7 @@ async function createTransaction(order: Order, customerPubkey: string): Promise<
         event: order,
         customerPubkey,
         timeline: { created_at: Date.now() },
-        totalPrice: { amount, currency: "USD" } // TODO: USD is hard-coded. Change it to the currency of the Product.
+        totalPrice: { amount, currency: "USD" } // TODO: USD is hard-coded. Change it to the currency provided by the ProductListing.
     } as Transaction;
 
     return { success: true, transaction };

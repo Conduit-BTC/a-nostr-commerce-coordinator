@@ -65,3 +65,13 @@ export enum DB_NAME {
     FAILED_ORDERS = "failed-orders-db", // key: orderId, value: Transaction
     IGNORED_EVENTS = "ignored-events-db",   // key: eventId, value: NostrEvent
 }
+
+export enum SIZE_UNIT {
+    CENTIMETER = 'centimeter',
+    INCH = 'inch'
+}
+
+export enum WEIGHT_UNIT {
+    KILO = 'kg',
+    OUNCE = 'oz'
+}

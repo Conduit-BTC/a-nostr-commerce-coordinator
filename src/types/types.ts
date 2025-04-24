@@ -1,5 +1,5 @@
 import { type ProductListing, type Order, type PaymentReceipt, type ShippingOption } from "nostr-commerce-schema";
-import type { CHECKOUT_ERROR, PAYMENT_STATUS, PAYMENT_TYPE } from "./enums";
+import type { CHECKOUT_ERROR, PAYMENT_STATUS, PAYMENT_TYPE, SIZE_UNIT, WEIGHT_UNIT } from "./enums";
 
 export type PerformTransactionPipelineResponse = {
     success: boolean,
@@ -18,6 +18,14 @@ export type TransactionProduct = {
     success: boolean,
     product?: ProductListing,
     quantity?: number,
+    dimensions?: {
+        sizeUnit: SIZE_UNIT,
+        weightUnit: WEIGHT_UNIT,
+        length?: number,
+        width?: number,
+        height?: number,
+        weight?: number
+    },
     pricePerItem?: {
         amount: string;
         currency: string;
@@ -128,4 +136,37 @@ export type PaymentRequestArgs = {
     orderId: string;
     amount: string;
     lnInvoice: string;
+}
+
+export type Package = {
+    weight: any;
+    itemCount: number;
+    units: string;
+    length: number;
+    width: number;
+    height: number;
+}
+
+export type MerchantSettings = {
+    packageSpecs: MerchantPackageSpec[]
+}
+
+export type MerchantPackageSpec = {
+    sizeUnit: SIZE_UNIT,
+    length: number,
+    width: number,
+    height: number,
+    weightUnit?: WEIGHT_UNIT,
+    maxWeight?: number
+}
+
+export type ShippingCostQuotePayload = {
+    originZIPCode: string | undefined;
+    destinationZIPCode: string;
+    weight: number;
+    length: any;
+    width: any;
+    height: any;
+    mailClasses: string[];
+    priceType: string;
 }
