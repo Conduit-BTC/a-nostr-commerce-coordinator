@@ -1,5 +1,5 @@
 import { getNdk } from "@/services/ndkService";
-import { NIP17_KIND, ORDER_MESSAGE_TYPE, type FULFILLMENT_STATUS, type ORDER_STATUS } from "@/types/enums";
+import { NIP17_KIND, ORDER_MESSAGE_TYPE, type FULFILLMENT_STATUS, type ORDER_STATUS } from "@/utils/constants";
 import type { PaymentRequestArgs, ReceiptArgs } from "@/types/types";
 import { NDKEvent, NDKPrivateKeySigner, NDKRelay, NDKUser } from "@nostr-dev-kit/ndk";
 import { generateSecretKey, getPublicKey } from "nostr-tools";

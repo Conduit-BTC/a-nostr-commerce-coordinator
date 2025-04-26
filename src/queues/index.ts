@@ -1,4 +1,4 @@
-import { QUEUE_NAME } from "@/types/enums";
+import { QUEUE_NAME } from "@/utils/constants";
 import { dmQueueEventHandler } from "./handlers/dmEventHandler";
 import { orderEventHandler } from "./handlers/orderEventHandler";
 

@@ -1,4 +1,4 @@
-import { SIZE_UNIT } from "@/types/enums";
+import { SIZE_UNIT } from "@/utils/constants";
 import type { MerchantPackageSpec, Package, ShippingCostQuotePayload, TransactionProduct } from "@/types/types";
 /**
  * Calculate shipping costs for a set of items to a zip code

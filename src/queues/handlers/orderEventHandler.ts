@@ -3,7 +3,7 @@ import { type QueueItem } from "../Queue";
 import processOrder from "@/core/checkout/processOrder";
 import { outputAllStoresToConsole } from "dev/utils/outputAllStoresToConsole";
 import { DEBUG_CTRL } from "dev/utils/debugModeControls";
-import { ORDER_MESSAGE_TYPE, ORDER_STATUS } from "@/types/enums";
+import { ORDER_MESSAGE_TYPE, ORDER_STATUS } from "@/utils/constants";
 import { sendOrderStatusUpdateMessage } from "@/utils/directMessageUtils";
 
 export async function orderEventHandler(queueItem: QueueItem<{ order: Order, customerPubkey: string }>) {

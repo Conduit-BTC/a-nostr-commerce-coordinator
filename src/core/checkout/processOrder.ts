@@ -12,7 +12,7 @@ import {
     type Transaction,
     type TransactionProduct
 } from "@/types/types";
-import { PAYMENT_TYPE, PAYMENT_STATUS, CHECKOUT_ERROR, DB_NAME } from "@/types/enums";
+import { PAYMENT_TYPE, PAYMENT_STATUS, CHECKOUT_ERROR, DB_NAME } from "@/utils/constants";
 import { exposeForTesting } from "@/utils/exposeForTesting";
 import { calculateVariableShippingCost } from "@/interfaces/fulfillment/calculateVariableShippingCost";
 

@@ -1,5 +1,5 @@
 import getDb from "@/services/dbService";
-import { DB_NAME, PAYMENT_STATUS } from "@/types/enums";
+import { DB_NAME, PAYMENT_STATUS } from "@/utils/constants";
 import type { Transaction } from "@/types/types";
 import { sendReceiptMessage } from "@/utils/directMessageUtils";
 
