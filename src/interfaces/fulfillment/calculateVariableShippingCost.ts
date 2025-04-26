@@ -1,5 +1,6 @@
-import { SIZE_UNIT } from "@/utils/constants";
+import { DB_NAME, MERCHANT_SETTING, SIZE_UNIT } from "@/utils/constants";
 import type { MerchantPackageSpec, Package, ShippingCostQuotePayload, TransactionProduct } from "@/types/types";
+import { getValueFromDb } from "@/utils/dbUtils";
 /**
  * Calculate shipping costs for a set of items to a zip code
  * @param {string} zip - Destination zip code
@@ -53,12 +54,13 @@ function getMerchantPackageSpecs(): MerchantPackageSpec[] {
     }];
 }
 
-function createShippingCostQuotePayload(zip: string, pkg: Package) {
-    const originZIPCode = 12345; // TODO: <<< Replace with zip code from MerchantSettings
+function createShippingCostQuotePayload(destinationZIPCode: string, pkg: Package) {
+    const originZIPCode = getValueFromDb(DB_NAME.SETTINGS, MERCHANT_SETTING.ZIP_CODE)
+    if (!originZIPCode) throw new Error("[calculateVariableShippingCost > createShippingCostQuotePayload]: Merchant Zip Code isn't set. Cannot calculate shipping estinate.")
 
     return {
         originZIPCode,
-        destinationZIPCode: zip,
+        destinationZIPCode,
         weight: pkg.weight,
         length: pkg.length,
         width: pkg.width,

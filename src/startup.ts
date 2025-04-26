@@ -38,7 +38,14 @@ function initSettings(): void {
     */
 
     // TODO: Perform a verification: Are there any ProductListings with dimensions that are larger than all available MerchantPackageSpecs? If so, notify the Merchant. Otherwise, the variable shipping price calculator will throw at generatePackages().
-    console.error("[startup] <<< verifyMerchantSettings not implemented! See function definition for more details")
+    console.error("[startup] <<< verifyMerchantSettings not implemented! See function definition for more details\n")
+    console.log("[startup] Merchant Settings:")
+
+    const settingsDb = getDb().openDB({ name: DB_NAME.SETTINGS });
+    settingsDb.putSync("merchant_zip_code", 12345)
+    settingsDb.getRange().forEach(({ key, value }) => {
+        console.log(`> ${String(key)}: ${String(value)}`)
+    })
 }
 
 function initQueues(): void {
