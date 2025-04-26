@@ -1,5 +1,5 @@
 import { type ProductListing, type Order, type ShippingOption } from "nostr-commerce-schema";
-import { CHECKOUT_ERROR, DB_NAME, FULFILLMENT_STATUS, INVOICE_STATUS, NIP17_KIND, ORDER_MESSAGE_TYPE, ORDER_STATUS, PAYMENT_STATUS, PAYMENT_TYPE, QUEUE_NAME, SIZE_UNIT, WEIGHT_UNIT } from "@/utils/constants"
+import { CHECKOUT_ERROR, DB_NAME, FULFILLMENT_STATUS, INVOICE_STATUS, MERCHANT_SETTING, NIP17_KIND, ORDER_MESSAGE_TYPE, ORDER_STATUS, PAYMENT_STATUS, PAYMENT_TYPE, QUEUE_NAME, SIZE_UNIT, WEIGHT_UNIT } from "@/utils/constants"
 
 type ValueOf<T> = T[keyof T];
 
@@ -15,6 +15,7 @@ export type QUEUE_NAME = ValueOf<typeof QUEUE_NAME>;
 export type DB_NAME = ValueOf<typeof DB_NAME>;
 export type SIZE_UNIT = ValueOf<typeof SIZE_UNIT>;
 export type WEIGHT_UNIT = ValueOf<typeof WEIGHT_UNIT>;
+export type MERCHANT_SETTING = ValueOf<typeof MERCHANT_SETTING>;
 
 export type PerformTransactionPipelineResponse = {
     success: boolean,

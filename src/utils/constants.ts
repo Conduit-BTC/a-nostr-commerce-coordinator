@@ -39,7 +39,7 @@ export const ORDER_STATUS = {
     PROCESSING: "processing",
     COMPLETED: "completed",
     CANCELLED: "cancelled",
-};
+} as const;
 
 export const PAYMENT_STATUS = {
     REQUESTED: "requested",
@@ -47,49 +47,49 @@ export const PAYMENT_STATUS = {
     PAID: "paid",
     EXPIRED: "expired",
     ERROR: "error",
-};
+} as const;
 
 export const FULFILLMENT_STATUS = {
     PROCESSING: "processing",
     SHIPPED: "shipped",
     DELIVERED: "delivered",
     EXCEPTION: "exception",
-};
+} as const;
 
 export const PAYMENT_TYPE = {
     LIGHTNING_BTC: "lightning_btc",
     ON_CHAIN_BTC: "on_chain_btc",
     CASHU: "cashu",
-};
+} as const;
 
 export const CHECKOUT_ERROR = {
     PRODUCT_MISSING: "product_missing",
     INSUFFICIENT_STOCK: "insufficient_stock",
-};
+} as const;
 
 export const INVOICE_STATUS = {
     PAID: "PAID",
     PENDING: "PENDING",
     EXPIRED: "EXPIRED",
-};
+} as const;
 
 export const NIP17_KIND = {
     MESSAGE: 14,
     ORDER_PROCESSING: 16,
     RECEIPT: 17,
-};
+} as const;
 
 export const ORDER_MESSAGE_TYPE = {
     CREATION: "1",
     PAYMENT_REQUEST: "2",
     STATUS_UPDATE: "3",
     SHIPPING_UPDATE: "4",
-};
+} as const;
 
 export const QUEUE_NAME = {
     DIRECT_MESSAGES: "direct-messages-queue",
     ORDERS: "orders",
-};
+} as const;
 
 export const DB_NAME = {
     PRODUCTS: "products-db",
@@ -99,15 +99,19 @@ export const DB_NAME = {
     SUCCESSFUL_ORDERS: "successful-orders-db",
     FAILED_ORDERS: "failed-orders-db",
     IGNORED_EVENTS: "ignored-events-db",
-    MERCHANT_SETTINGS: "merchant-settings-db",
-};
+    SETTINGS: "merchant-settings-db",
+} as const;
 
 export const SIZE_UNIT = {
     CENTIMETER: "centimeter",
     INCH: "inch",
-};
+} as const;
 
 export const WEIGHT_UNIT = {
     KILO: "kg",
     OUNCE: "oz",
-};
+} as const;
+
+export const MERCHANT_SETTING = {
+    ZIP_CODE: "merchant_zip_code"
+} as const;
