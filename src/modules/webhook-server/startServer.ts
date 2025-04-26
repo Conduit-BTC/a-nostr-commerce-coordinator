@@ -1,5 +1,5 @@
 import { invoiceWebhookDetails } from "@/utils/constants";
-import { handleInvoiceWebhook } from "@/server/webhooks/handleInvoiceWebhook";
+import { handleInvoiceWebhook } from "@/modules/webhook-server/webhooks/handleInvoiceWebhook";
 
 export function startWebhookServer() {
     const { port, path, method } = invoiceWebhookDetails;

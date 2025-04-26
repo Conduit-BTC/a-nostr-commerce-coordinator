@@ -1,7 +1,25 @@
-import { getNdk } from "@/services/ndkService";
-import { getMerchantSpecificProductFilter } from "@/utils/constants";
-import type { NDKRelaySet } from "@nostr-dev-kit/ndk";
+import getDb from "@/services/dbService";
 import { validateProductListing, type ProductListing } from "nostr-commerce-schema";
+import { getHomeRelaySet, getNdk, getRelayPool } from "@/services/ndkService";
+import { DB_NAME, getMerchantSpecificProductFilter } from "@/utils/constants";
+import type { NDKRelaySet } from "@nostr-dev-kit/ndk";
+
+/*
+    * Attempts to retrieve a single Product from the DB, fails over to the HomeRelay, finally to the RelayPool.
+*/
+export async function getProduct(productId: string): Promise<ProductListing | null> {
+    const productDb = getDb().openDB({ name: DB_NAME.PRODUCTS });
+    const productFromDb = await productDb.get(`nostr-product-event:${productId}`);
+    if (productFromDb) return productFromDb as ProductListing;
+
+    const productFromHomeRelay = await fetchProductFromRelaySet(await getHomeRelaySet(), productId);
+    if (productFromHomeRelay) return productFromHomeRelay;
+
+    const productFromRelayPool = await fetchProductFromRelaySet(await getRelayPool(), productId);
+    if (productFromRelayPool) return productFromRelayPool;
+
+    return null;
+}
 
 export default async function fetchProductFromRelaySet(relaySet: NDKRelaySet, productId: string, timeoutMs = 1000): Promise<ProductListing | null> {
     console.log(`[fetchProductFromRelaySet]: Fetching ${productId} from relay set...`);

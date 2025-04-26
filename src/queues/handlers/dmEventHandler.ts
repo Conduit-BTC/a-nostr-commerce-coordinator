@@ -3,7 +3,7 @@ import { OrderUtils, validateOrder, type Order } from "nostr-commerce-schema";
 import { NDKEvent, NDKPrivateKeySigner, NDKUser, type NostrEvent } from "@nostr-dev-kit/ndk";
 import { getQueue, QueueRegistry, type QueueItem } from "../Queue";
 import { DB_NAME, ORDER_MESSAGE_TYPE, ORDER_STATUS, QUEUE_NAME } from "@/utils/constants";
-import { sendOrderStatusUpdateMessage } from "@/utils/directMessageUtils";
+import { sendOrderStatusUpdateMessage } from "@/modules/direct-messages/directMessageUtils";
 
 
 const privkey = process.env.PRIVKEY

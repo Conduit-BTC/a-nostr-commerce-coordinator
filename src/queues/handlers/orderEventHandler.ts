@@ -1,10 +1,10 @@
 import { OrderUtils, type Order } from "nostr-commerce-schema";
 import { type QueueItem } from "../Queue";
-import processOrder from "@/core/checkout/processOrder";
+import processOrder from "@/modules/order/processOrder";
 import { outputAllStoresToConsole } from "dev/utils/outputAllStoresToConsole";
 import { DEBUG_CTRL } from "dev/utils/debugModeControls";
 import { ORDER_MESSAGE_TYPE, ORDER_STATUS } from "@/utils/constants";
-import { sendOrderStatusUpdateMessage } from "@/utils/directMessageUtils";
+import { sendOrderStatusUpdateMessage } from "@/modules/direct-messages/directMessageUtils";
 
 export async function orderEventHandler(queueItem: QueueItem<{ order: Order, customerPubkey: string }>) {
     try {

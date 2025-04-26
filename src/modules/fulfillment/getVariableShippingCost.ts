@@ -7,7 +7,7 @@ import { getValueFromDb } from "@/utils/dbUtils";
  * @param {Array} items - Cart items to be shipped
  * @returns {Promise<{ success: boolean, cost?: number, error?}: { message: string, status?: number }>}
  */
-export async function calculateVariableShippingCost(address: string, items: TransactionProduct[]): Promise<{ success: boolean, cost?: number, error?: { message: string, status: number } }> {
+export async function getVariableShippingCost(address: string, items: TransactionProduct[]): Promise<{ success: boolean, cost?: number, error?: { message: string, status: number } }> {
     try {
         const { zip } = parseAddressString(address);
         const packageSpecs: MerchantPackageSpec[] = getMerchantPackageSpecs();
@@ -37,7 +37,7 @@ export async function calculateVariableShippingCost(address: string, items: Tran
         return {
             success: false,
             error: {
-                message: '[calculateVariableShippingCost]: Error calculating shipping cost',
+                message: '[getVariableShippingCost]: Error calculating shipping cost',
                 status: error.status || 500
             }
         };
@@ -45,7 +45,7 @@ export async function calculateVariableShippingCost(address: string, items: Tran
 }
 
 function getMerchantPackageSpecs(): MerchantPackageSpec[] {
-    console.error("[calculateVariableShippingCost > getMerchatPackagePreferences]: <<< NOT IMPLEMENTED. USING FAKE DATA. Fetch from MerchantSettings database, instead.")
+    console.error("[getVariableShippingCost > getMerchatPackagePreferences]: <<< NOT IMPLEMENTED. USING FAKE DATA. Fetch from MerchantSettings database, instead.")
     return [{
         height: 10,
         width: 10,
@@ -56,7 +56,7 @@ function getMerchantPackageSpecs(): MerchantPackageSpec[] {
 
 function createShippingCostQuotePayload(destinationZIPCode: string, pkg: Package) {
     const originZIPCode = getValueFromDb(DB_NAME.SETTINGS, MERCHANT_SETTING.ZIP_CODE)
-    if (!originZIPCode) throw new Error("[calculateVariableShippingCost > createShippingCostQuotePayload]: Merchant Zip Code isn't set. Cannot calculate shipping estinate.")
+    if (!originZIPCode) throw new Error("[getVariableShippingCost > createShippingCostQuotePayload]: Merchant Zip Code isn't set. Cannot calculate shipping estinate.")
 
     return {
         originZIPCode,
