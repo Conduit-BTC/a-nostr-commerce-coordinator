@@ -1,5 +1,5 @@
-import { processPayment } from "@/core/checkout/processPayment";
-import { getStrikeInvoiceDetails } from "@/interfaces/payment/providers/StrikePaymentProvider";
+import { processPayment } from "@/modules/payment/processPayment";
+import { getStrikeInvoiceDetails } from "@/modules/payment/providers/StrikePaymentProvider";
 import { INVOICE_STATUS } from "@/utils/constants";
 
 export async function handleInvoiceWebhook(req: Request): Promise<void> {

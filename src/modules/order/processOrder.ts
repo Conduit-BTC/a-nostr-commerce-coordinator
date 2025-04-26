@@ -1,7 +1,7 @@
 import { OrderUtils, ProductListingUtils, type Order } from "nostr-commerce-schema";
-import { getProduct } from "./getProduct";
-import { createInvoice } from "@/interfaces/payment/LightningInterface";
-import { sendPaymentRequestMessage } from "@/utils/directMessageUtils";
+import { getProduct } from "../product/getProduct";
+import { createInvoice } from "@/modules/payment/createInvoice";
+import { sendPaymentRequestMessage } from "@/modules/direct-messages/directMessageUtils";
 import { DEBUG_CTRL } from "dev/utils/debugModeControls";
 import getDb from "@/services/dbService";
 import {
@@ -14,7 +14,7 @@ import {
 } from "@/types/types";
 import { PAYMENT_TYPE, PAYMENT_STATUS, CHECKOUT_ERROR, DB_NAME } from "@/utils/constants";
 import { exposeForTesting } from "@/utils/exposeForTesting";
-import { calculateVariableShippingCost } from "@/interfaces/fulfillment/calculateVariableShippingCost";
+import { getVariableShippingCost } from "@/modules/fulfillment/getVariableShippingCost";
 
 
 export default async function processOrder(event: Order, customerPubkey: string): Promise<ProcessOrderResponse> {
@@ -102,8 +102,8 @@ async function createTransaction(order: Order, customerPubkey: string): Promise<
     let shippingCost = 0.0; // USD
 
     if (variableShippingCost) {
-        const a = await calculateVariableShippingCost(orderShippingDetails.address, transactionItems);
-        if (a.error) throw new Error(`[processOrder > calculateVariableShippingCost]: There was an issue calculating variable shipping cost. Status: ${a.error.status} - Message:${a.error.message}`)
+        const a = await getVariableShippingCost(orderShippingDetails.address, transactionItems);
+        if (a.error) throw new Error(`[processOrder > getVariableShippingCost]: There was an issue calculating variable shipping cost. Status: ${a.error.status} - Message:${a.error.message}`)
         shippingCost += a.cost!;
     }
 

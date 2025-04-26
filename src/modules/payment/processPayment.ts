@@ -1,7 +1,7 @@
 import getDb from "@/services/dbService";
 import { DB_NAME, PAYMENT_STATUS } from "@/utils/constants";
 import type { Transaction } from "@/types/types";
-import { sendReceiptMessage } from "@/utils/directMessageUtils";
+import { sendReceiptMessage } from "@/modules/direct-messages/directMessageUtils";
 
 export async function processPayment(invoiceId: string): Promise<void> {
     console.log(`[processPayment]: Processing payment for invoice ${invoiceId}...`);

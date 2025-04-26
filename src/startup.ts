@@ -1,5 +1,5 @@
-import subscribeDirectMessages from "@/core/subscribeDirectMessages";
-import synchronizeProducts from "@/core/products/synchronizeProducts";
+import subscribeDirectMessages from "@/modules/direct-messages/subscribeDirectMessages";
+import synchronizeProducts from "@/modules/product/synchronizeProducts";
 import { Queue, QueueRegistry } from "./queues/Queue";
 import getDb from "./services/dbService";
 import { ignoredEventIds } from "./utils/shouldIgnoreEvent";
@@ -8,8 +8,8 @@ import type { Order } from "nostr-commerce-schema";
 import type { NostrEvent } from "@nostr-dev-kit/ndk";
 import isDebugMode, { DEBUG_CTRL } from "../dev/utils/debugModeControls";
 import { DB_NAME } from "./utils/constants";
-import { startWebhookServer } from "./server/startServer";
-import synchronizeShippingOptions from "./core/shippingOptions/synchronizeShippingOptions";
+import { startWebhookServer } from "./modules/webhook-server/startServer";
+import synchronizeShippingOptions from "./modules/shipping-options/synchronizeShippingOptions";
 
 function verifyEnvVars(): void {
     if (!process.env.PUBKEY || !process.env.PRIVKEY) throw new Error(`[subscribeDirectMessages]: PUBKEY or PRIVKEY not found in .env`);
