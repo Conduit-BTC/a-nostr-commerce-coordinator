@@ -2,7 +2,7 @@ import { merchantProductsFilter } from "@/utils/constants";
 import getDb from "@/services/dbService";
 import { getHomeRelaySet, getNdk, getRelayPool } from "@/services/ndkService";
 import { type NDKEvent } from "@nostr-dev-kit/ndk";
-import { DB_NAME } from "@/types/enums";
+import { DB_NAME } from "@/utils/constants";
 import { ProductListingUtils, ShippingOptionUtils, type ProductListing, type ShippingOption } from "nostr-commerce-schema";
 
 export default async function synchronizeProducts() {

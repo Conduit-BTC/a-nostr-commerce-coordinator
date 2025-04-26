@@ -1,7 +1,7 @@
 import { pubkey } from "@/utils/constants";
 import getDb from "@/services/dbService";
 import { getNdk } from "@/services/ndkService";
-import { DB_NAME } from "@/types/enums";
+import { DB_NAME } from "@/utils/constants";
 import { ProductListingUtils, ShippingOptionUtils, type ProductListing, type ShippingOption } from "nostr-commerce-schema";
 
 export default async function synchronizeShippingOptions() {

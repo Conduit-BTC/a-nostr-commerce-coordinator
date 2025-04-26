@@ -2,7 +2,7 @@ import getDb from "@/services/dbService";
 import type { ProductListing } from "nostr-commerce-schema";
 import fetchProductFromRelaySet from "./fetchProductFromRelaySet";
 import { getHomeRelaySet, getRelayPool } from "@/services/ndkService";
-import { DB_NAME } from "@/types/enums";
+import { DB_NAME } from "@/utils/constants";
 
 /*
     * Attempts to retrieve a single Product from the DB, fails over to the HomeRelay, finally to the RelayPool.

@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, mock } from "bun:test";
 import { prepareTransactionItems_TEST as prepareTransactionItems } from "@/core/checkout/processOrder";
-import { CHECKOUT_ERROR } from "@/types/enums";
+import { CHECKOUT_ERROR } from "@/utils/constants";
 import { OrderUtils } from "nostr-commerce-schema";
 import type { OrderItem } from "@/types/types";
 

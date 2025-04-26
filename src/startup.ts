@@ -7,7 +7,7 @@ import { dmQueueConfig, orderQueueConfig } from "./queues";
 import type { Order } from "nostr-commerce-schema";
 import type { NostrEvent } from "@nostr-dev-kit/ndk";
 import isDebugMode, { DEBUG_CTRL } from "../dev/utils/debugModeControls";
-import { DB_NAME } from "./types/enums";
+import { DB_NAME } from "./utils/constants";
 import { startWebhookServer } from "./server/startServer";
 import synchronizeShippingOptions from "./core/shippingOptions/synchronizeShippingOptions";
 
@@ -26,7 +26,7 @@ function verifyEnvVars(): void {
     }
 }
 
-function verifyMerchantSettings(): void {
+function initSettings(): void {
     /**
      * Before the Coordinator starts, the following details must be set by the Merchant, and/or the Merchant must be explicitly informed of the implications of not setting optional values: 
      * 
@@ -71,7 +71,7 @@ export default async function startup(): Promise<void> {
         console.log("⚡⚡⚡ Commerce Coordinator starting up... ⚡⚡⚡");
 
         verifyEnvVars();
-        verifyMerchantSettings();
+        initSettings();
         initQueues();
         initIgnoredEvents();
 
