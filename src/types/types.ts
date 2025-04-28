@@ -17,18 +17,39 @@ export type SIZE_UNIT = ValueOf<typeof SIZE_UNIT>;
 export type WEIGHT_UNIT = ValueOf<typeof WEIGHT_UNIT>;
 export type MERCHANT_SETTING = ValueOf<typeof MERCHANT_SETTING>;
 
-export type PerformTransactionPipelineResponse = {
-    success: boolean,
-    messageToCustomer: string,
-    transaction?: Transaction,
+export type MerchantSettings = {
+    packageSpecs: MerchantPackageSpec[]
 }
 
-export type ProcessOrderResponse = {
-    success: boolean;
-    error?: any;
-    messageToCustomer?: string;
-    transaction?: Transaction;
+// Defines the specs for packages the Merchant is capable of sending to Customer
+export type MerchantPackageSpec = {
+    sizeUnit: SIZE_UNIT,
+    length: number,
+    width: number,
+    height: number,
+    weightUnit?: WEIGHT_UNIT,
+    maxWeight?: number
 }
+
+export type Transaction = {
+    orderId: string;
+    items: TransactionProduct[];
+    event: Order;
+    customerPubkey: string;
+    totalPrice: {
+        amount: number;
+        currency: string;
+    },
+    timeline: {
+        created_at: number;
+        paid_at?: number;
+        shipped_at?: number;
+        delivered_at?: number;
+        cancelled_at?: number;
+    }
+    payment?: Payment;
+    shipping?: TransactionShippingInformation;
+};
 
 export type TransactionProduct = {
     success: boolean,
@@ -51,14 +72,24 @@ export type TransactionProduct = {
     message?: string,
 }
 
-export type OrderItem = {
-    productRef: string;
-    quantity: number;
+export type TransactionShippingInformation = {
+    address: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    address2?: string;
+    email?: string;
+    phone?: string;
 }
 
-export type LightningPaymentDetails = {
-    invoiceId: string;
-    lightningInvoice: string;
+export type Package = {
+    weight: any;
+    itemCount: number;
+    units: string;
+    length: number;
+    width: number;
+    height: number;
 }
 
 export type Payment = {
@@ -71,46 +102,56 @@ export type Payment = {
     error?: string;
 }
 
-export type Transaction = {
-    orderId: string;
-    items: TransactionProduct[];
-    event: Order;
-    customerPubkey: string;
-    totalPrice: {
-        amount: number;
-        currency: string;
-    },
-    timeline: {
-        created_at: number;
-        paid_at?: number;
-        shipped_at?: number;
-        delivered_at?: number;
-        cancelled_at?: number;
-    }
-    payment?: Payment;
-    shipping?: ShippingOption;
-};
-
-export type TransactionShippingInformation = {
-    address: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-    address2?: string;
-    email?: string;
-    phone?: string;
+export type LightningPaymentDetails = {
+    invoiceId: string;
+    lightningInvoice: string;
 }
 
-export type ProductShippingOption = {
-    address: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-    trackingNumber?: string;
-    courier?: string;
+export type OrderItem = {
+    productRef: string;
+    quantity: number;
+}
+
+export type ReceiptArgs = {
+    recipient: string;
+    orderId: string;
+    amount: string;
+    lnInvoice: string;
+    lnPaymentHash: string;
 };
+
+export type PaymentRequestArgs = {
+    recipient: string;
+    orderId: string;
+    amount: string;
+    lnInvoice: string;
+}
+
+export type ShippingCostQuotePayload = {
+    originZIPCode: string | undefined;
+    destinationZIPCode: string;
+    weight: number;
+    length: any;
+    width: any;
+    height: any;
+    mailClasses: string[];
+    priceType: string;
+}
+
+// Responses
+
+export type PerformTransactionPipelineResponse = {
+    success: boolean,
+    messageToCustomer: string,
+    transaction?: Transaction,
+}
+
+export type ProcessOrderResponse = {
+    success: boolean;
+    error?: any;
+    messageToCustomer?: string;
+    transaction?: Transaction;
+}
 
 export type CreateTransactionResponse = {
     success: boolean;
@@ -136,53 +177,4 @@ export type StrikeBaseInvoiceResponse = {
     success: boolean;
     message?: string;
     invoiceId?: string;
-}
-
-export type ReceiptArgs = {
-    recipient: string;
-    orderId: string;
-    amount: string;
-    lnInvoice: string;
-    lnPaymentHash: string;
-};
-
-
-export type PaymentRequestArgs = {
-    recipient: string;
-    orderId: string;
-    amount: string;
-    lnInvoice: string;
-}
-
-export type Package = {
-    weight: any;
-    itemCount: number;
-    units: string;
-    length: number;
-    width: number;
-    height: number;
-}
-
-export type MerchantSettings = {
-    packageSpecs: MerchantPackageSpec[]
-}
-
-export type MerchantPackageSpec = {
-    sizeUnit: SIZE_UNIT,
-    length: number,
-    width: number,
-    height: number,
-    weightUnit?: WEIGHT_UNIT,
-    maxWeight?: number
-}
-
-export type ShippingCostQuotePayload = {
-    originZIPCode: string | undefined;
-    destinationZIPCode: string;
-    weight: number;
-    length: any;
-    width: any;
-    height: any;
-    mailClasses: string[];
-    priceType: string;
 }
