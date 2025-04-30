@@ -8,24 +8,43 @@ import type { Order } from "nostr-commerce-schema";
 import type { NostrEvent } from "@nostr-dev-kit/ndk";
 import isDebugMode, { DEBUG_CTRL } from "../dev/utils/debugModeControls";
 import { DB_NAME } from "./utils/constants";
-import { startWebhookServer } from "./modules/webhook-server/startServer";
+import { startWebhookServer } from "./services/webhook-server/startServer";
 import synchronizeShippingOptions from "./modules/shipping-options/synchronizeShippingOptions";
 
-function verifyEnvVars(): void {
-    if (!process.env.PUBKEY || !process.env.PRIVKEY) throw new Error(`[subscribeDirectMessages]: PUBKEY or PRIVKEY not found in .env`);
-    if (!process.env.STRIKE_API_KEY) throw new Error(`[subscribeDirectMessages]: STRIKE_API_KEY not found in .env`);
-    if (!process.env.USPS_CLIENT_ID || !process.env.USPS_CLIENT_SECRET) throw new Error(`[subscribeDirectMessages]: USPS_CLIENT_ID and USPS_CLIENT_SECRET are both required environment variables.`);
-    if (!process.env.SHIPSTATION_API_KEY || !process.env.SHIPSTATION_API_SECRET) throw new Error(`[subscribeDirectMessages]: SHIPSTATION_API_KEY and SHIPSTATION_API_SECRET are both required environment variables.`);
+// TODO: All env vars must be moved out of the Coordinator. Some form of remote-hosted NSEC Bunker API will receive all sign & decrypt requests from the Coordinator, and a Secrets Manager will be used for the non-NSEC env vars.
 
-    if (isDebugMode()) {
-        // TODO: Swap out these DEBUG_MOD_CONTROLS with a sandbox mode that mocks the network, instead. Leaving here for now during early development.
-        console.log("\n===== Developer Mode Variables =====\n")
-        console.log("USE_TEST_PAYMENT_AMOUNT: ", DEBUG_CTRL.USE_TEST_PAYMENT_AMOUNT);
-        console.log("USE_MOCK_LIGHTNING_INVOICE: ", DEBUG_CTRL.USE_MOCK_LIGHTNING_INVOICE);
-        console.log("SUPPRESS_OUTBOUND_MESSAGES", DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES);
-        console.log("\n===== END Developer Mode Variables =====\n")
-    }
+const requiredEnvVars = [
+    'PUBKEY',
+    'PRIVKEY',
+    'STRIKE_API_KEY',
+    'USPS_CLIENT_ID',
+    'SHIPSTATION_API_KEY',
+    'SHIPSTATION_API_SECRET'
+];
+
+// TODO: Swap out DEBUG_MOD_CONTROLS app-wide with better debugging practice that doesn't litter the source code. Leaving here for now during early development.
+
+const debugFlags = [
+    'USE_TEST_PAYMENT_AMOUNT',
+    'USE_MOCK_LIGHTNING_INVOICE',
+    'SUPPRESS_OUTBOUND_MESSAGES',
+]
+
+function verifyEnvVars(required: string[], debug: string[]): void {
+    // TODO: Recursively do this
+    required.forEach((key) => {
+        if (!process.env[key]) throw new Error(`[startup > verifyEnvVars]: Environment Variable missing: ${key}`);
+    })
+
+    if (!isDebugMode()) return
+
+    debug.forEach((key) => {
+        if (process.env[key] === undefined) {
+            throw new Error(`[startup > verifyDebugEnvVars]: Missing debug env var: ${key}`);
+        }
+    });
 }
+
 
 function initSettings(): void {
     /**
@@ -78,7 +97,7 @@ export default async function startup(): Promise<void> {
     try {
         console.log("⚡⚡⚡ Commerce Coordinator starting up... ⚡⚡⚡");
 
-        verifyEnvVars();
+        verifyEnvVars(requiredEnvVars, debugFlags);
         initSettings();
         initQueues();
         initIgnoredEvents();
