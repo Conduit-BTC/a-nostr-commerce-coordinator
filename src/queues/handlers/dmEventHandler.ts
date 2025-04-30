@@ -30,6 +30,7 @@ export async function dmQueueEventHandler(queueItem: QueueItem<NostrEvent>) {
             // Move this to the orders queue
             QueueRegistry.get(QUEUE_NAME.ORDERS)?.push({ order: order.data, customerPubkey: sealJson.pubkey });
             QueueRegistry.get(QUEUE_NAME.DIRECT_MESSAGES)?.confirmProcessed(queueItem.id);
+            // Handled by orderEventHandler
             return;
         }
 

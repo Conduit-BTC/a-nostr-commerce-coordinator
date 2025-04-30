@@ -1,6 +1,6 @@
 import { getNdk } from "@/services/ndkService";
-import { NIP17_KIND, ORDER_MESSAGE_TYPE, type FULFILLMENT_STATUS, type ORDER_STATUS } from "@/utils/constants";
-import type { PaymentRequestArgs, ReceiptArgs } from "@/types/types";
+import { NIP17_KIND, ORDER_MESSAGE_TYPE } from "@/utils/constants";
+import type { PaymentRequestArgs, ReceiptArgs, ORDER_STATUS, FULFILLMENT_STATUS, NIP17_KIND as TYPE_NIP17_KIND, ORDER_MESSAGE_TYPE as TYPE_ORDER_MESSAGE_TYPE } from "@/types/types";
 import { NDKEvent, NDKPrivateKeySigner, NDKRelay, NDKUser } from "@nostr-dev-kit/ndk";
 import { generateSecretKey, getPublicKey } from "nostr-tools";
 
@@ -21,7 +21,7 @@ type OrderStatusUpdateArgs = {
     recipient: string;
     orderId: string;
     status: ORDER_STATUS | FULFILLMENT_STATUS;
-    type: ORDER_MESSAGE_TYPE;
+    type: TYPE_ORDER_MESSAGE_TYPE;
     message: string;
     tags?: string[][];
 }
@@ -94,7 +94,7 @@ export async function sendReceiptMessage({ recipient, orderId, amount, lnInvoice
     }
 };
 
-async function createNip17GiftWrapEvent(kind: NIP17_KIND, recipient: string, message: string, type?: ORDER_MESSAGE_TYPE, tags?: string[][]): Promise<NDKEvent> {
+async function createNip17GiftWrapEvent(kind: TYPE_NIP17_KIND, recipient: string, message: string, type?: TYPE_ORDER_MESSAGE_TYPE, tags?: string[][]): Promise<NDKEvent> {
     const ndk = await getNdk();
     const rumor = new NDKEvent(ndk);
 

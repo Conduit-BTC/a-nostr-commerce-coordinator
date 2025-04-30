@@ -19,9 +19,7 @@ import { getVariableShippingCost } from "@/modules/fulfillment/getVariableShippi
 
 export default async function processOrder(event: Order, customerPubkey: string): Promise<ProcessOrderResponse> {
     try {
-        console.log("[verifyNewOrder]: Processing new order...");
-
-        // TODO: Shipping steps
+        console.log("[processOrder]: Processing new order...");
 
         const createTransactionResponse = await createTransaction(event, customerPubkey);
         if (!createTransactionResponse.success) return {
@@ -33,18 +31,18 @@ export default async function processOrder(event: Order, customerPubkey: string)
 
         const validateTransactionResponse = validateTransaction(transaction!);
         if (!validateTransactionResponse.success) {
-            console.error("[verifyNewOrder]: Issue with transaction in ", transaction!.orderId);
+            console.error("[processOrder]: Issue with transaction in ", transaction!.orderId);
             return {
                 success: false,
                 messageToCustomer: validateTransactionResponse.messageToCustomer!,
             };
         }
 
-        console.log("[verifyNewOrder]: Transaction valid for Order ID:", transaction!.orderId);
+        console.log("[processOrder]: Transaction valid for Order ID:", transaction!.orderId);
 
         const finalizeTransactionResponse = await finalizeTransaction(transaction!);
         if (!finalizeTransactionResponse.success) {
-            console.error("[verifyNewOrder]: Issue with finalizing transaction in ", transaction!.orderId);
+            console.error("[processOrder]: Issue with finalizing transaction in ", transaction!.orderId);
             return {
                 success: false,
                 messageToCustomer: finalizeTransactionResponse.messageToCustomer!,
@@ -72,7 +70,7 @@ async function createTransaction(order: Order, customerPubkey: string): Promise<
 
     // Right now, we're failing the order if any Products cannot be located in the database, home relay, or relay pool. Later, we'll gracefully handle this by contacting the Customer to ask if they'd like to proceed without those items.
     if (transactionItems.length === 0 || missingItems.length > 0) {
-        console.error(`[verifyNewOrder]: Issue with items in Order ID: ${orderId}`);
+        console.error(`[processOrder]: Issue with items in Order ID: ${orderId}`);
         return {
             success: false,
             messageToCustomer: "[Commerce Coordinator Bot]: Sorry, I ran into a problem. I'll contact you shortly to proceed with your order."
@@ -88,6 +86,10 @@ async function createTransaction(order: Order, customerPubkey: string): Promise<
     // TODO: Support digital deliveries
     if (!orderShippingDetails || !orderShippingDetails.address) return { success: false, messageToCustomer: "[Commerce Coordinator Bot]: It looks like you didn't include a shipping address. I cannot process your order without one." };
 
+    const { street1, zip } = OrderUtils.parseAddressString(orderShippingDetails.address);
+    if (!street1) throw new Error(`[processOrder > getVariableShippingCost]: There was an issue calculating variable shipping cost: No street address was provided.`)
+    if (!zip) throw new Error(`[processOrder > getVariableShippingCost]: There was an issue calculating variable shipping cost: No zip code was provided.`)
+
     let variableShippingCost = true; // TODO: <<< This is currently hard-coded. This will only work for Merchants that 100% always want variable shipping cost calculations. This is great for us, now, but must be updated when we're ready to release for other Merchants.
 
     // const orderShippingOptionRef: string | null = OrderUtils.getOrderShipping(order);
@@ -102,7 +104,7 @@ async function createTransaction(order: Order, customerPubkey: string): Promise<
     let shippingCost = 0.0; // USD
 
     if (variableShippingCost) {
-        const a = await getVariableShippingCost(orderShippingDetails.address, transactionItems);
+        const a = await getVariableShippingCost(zip, transactionItems);
         if (a.error) throw new Error(`[processOrder > getVariableShippingCost]: There was an issue calculating variable shipping cost. Status: ${a.error.status} - Message:${a.error.message}`)
         shippingCost += a.cost!;
     }

@@ -1,15 +1,15 @@
 import { DB_NAME, MERCHANT_SETTING, SIZE_UNIT } from "@/utils/constants";
 import type { MerchantPackageSpec, Package, ShippingCostQuotePayload, TransactionProduct } from "@/types/types";
 import { getValueFromDb } from "@/utils/dbUtils";
+import { OrderUtils, ShippingOptionUtils } from "nostr-commerce-schema";
 /**
  * Calculate shipping costs for a set of items to a zip code
  * @param {string} zip - Destination zip code
  * @param {Array} items - Cart items to be shipped
  * @returns {Promise<{ success: boolean, cost?: number, error?}: { message: string, status?: number }>}
  */
-export async function getVariableShippingCost(address: string, items: TransactionProduct[]): Promise<{ success: boolean, cost?: number, error?: { message: string, status: number } }> {
+export async function getVariableShippingCost(zip: string, items: TransactionProduct[]): Promise<{ success: boolean, cost?: number, error?: { message: string, status: number } }> {
     try {
-        const { zip } = parseAddressString(address);
         const packageSpecs: MerchantPackageSpec[] = getMerchantPackageSpecs();
         const packages: Package[] = generatePackages(items, packageSpecs);
         let totalCost = 0.0;
@@ -25,7 +25,7 @@ export async function getVariableShippingCost(address: string, items: Transactio
                 };
             }
 
-            totalCost += rateResponse.cost;
+            totalCost += rateResponse.cost!;
         }
 
         return {
@@ -47,7 +47,7 @@ export async function getVariableShippingCost(address: string, items: Transactio
 function getMerchantPackageSpecs(): MerchantPackageSpec[] {
     console.error("[getVariableShippingCost > getMerchatPackagePreferences]: <<< NOT IMPLEMENTED. USING FAKE DATA. Fetch from MerchantSettings database, instead.")
     return [{
-        height: 10,
+        height: 12,
         width: 10,
         length: 2,
         sizeUnit: SIZE_UNIT.INCH
@@ -65,7 +65,7 @@ function createShippingCostQuotePayload(destinationZIPCode: string, pkg: Package
         length: pkg.length,
         width: pkg.width,
         height: pkg.height,
-        mailClasses: ['USPS_GROUND_ADVANTAGE'],
+        mailClasses: ['USPS_GROUND_ADVANTAGE'], // TODO: Relegate possible mail classes to the Merchant Settings
         priceType: 'CONTRACT',
     };
 }
@@ -183,12 +183,8 @@ function generatePackages(items: TransactionProduct[], packageSpecs: MerchantPac
 
 async function getUspsOauthToken(): Promise<{ access_token: string }> {
     const tokenUrl = 'https://api.usps.com/oauth2/v3/token';
-    const clientId = process.env.USPS_CLIENT_ID;
-    const clientSecret = process.env.USPS_CLIENT_SECRET;
-
-    if (!clientId || !clientSecret) {
-        throw new Error('Missing USPS client ID or client secret');
-    }
+    const clientId = process.env.USPS_CLIENT_ID!;
+    const clientSecret = process.env.USPS_CLIENT_SECRET!;
 
     const data = new URLSearchParams({
         grant_type: 'client_credentials',

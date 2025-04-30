@@ -3,7 +3,7 @@ import getDb from "@/services/dbService";
 import { getHomeRelaySet, getNdk, getRelayPool } from "@/services/ndkService";
 import { type NDKEvent } from "@nostr-dev-kit/ndk";
 import { DB_NAME } from "@/utils/constants";
-import { ProductListingUtils, ShippingOptionUtils, type ProductListing, type ShippingOption } from "nostr-commerce-schema";
+import { ProductListingUtils, type ProductListing, type ShippingOption } from "nostr-commerce-schema";
 
 export default async function synchronizeProducts() {
     console.log("[synchronizeProducts]: Synchronizing products...");
@@ -46,10 +46,6 @@ export default async function synchronizeProducts() {
         // This is simply mirroring the home relay event to the local database, then broadcasting it out to the relay pool
         console.log("[synchronizeProducts]: Storing product event in local database...");
         await productsDb.put(`nostr-product-event:${productId}`, product);
-        const shippingOptions = ProductListingUtils.getProductShippingOptions(product as unknown as ProductListing);
-        if (shippingOptions) {
-            shippingOptions.map((option: ShippingOption) => { })
-        }
         console.log("[synchronizeProducts]: Product event stored in local database: " + `nostr-product-event:${productId}`);
 
         if (relayPool.size === 0) {
