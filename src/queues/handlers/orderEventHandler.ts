@@ -1,6 +1,6 @@
 import { OrderUtils, type Order } from "nostr-commerce-schema";
 import { type QueueItem } from "../Queue";
-import processOrder from "@/modules/order/processOrder";
+import processOrder from "@/modules/orders/processOrder";
 import { outputAllStoresToConsole } from "dev/utils/outputAllStoresToConsole";
 import { DEBUG_CTRL } from "dev/utils/debugModeControls";
 import { ORDER_MESSAGE_TYPE, ORDER_STATUS } from "@/utils/constants";

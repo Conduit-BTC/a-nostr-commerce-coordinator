@@ -1,6 +1,6 @@
 import { OrderUtils, ProductListingUtils, type Order } from "nostr-commerce-schema";
-import { getProduct } from "../product/getProduct";
-import { createInvoice } from "@/modules/payment/createInvoice";
+import { getProduct } from "../products/getProduct";
+import { createInvoice } from "@/modules/payments/createInvoice";
 import { sendPaymentRequestMessage } from "@/modules/direct-messages/directMessageUtils";
 import { DEBUG_CTRL } from "dev/utils/debugModeControls";
 import getDb from "@/services/dbService";
@@ -14,7 +14,7 @@ import {
 } from "@/types/types";
 import { PAYMENT_TYPE, PAYMENT_STATUS, CHECKOUT_ERROR, DB_NAME } from "@/utils/constants";
 import { exposeForTesting } from "@/utils/exposeForTesting";
-import { getVariableShippingCost } from "@/modules/fulfillment/getVariableShippingCost";
+import { getVariableShippingCost } from "@/modules/fulfillments/getVariableShippingCost";
 
 
 export default async function processOrder(event: Order, customerPubkey: string): Promise<ProcessOrderResponse> {

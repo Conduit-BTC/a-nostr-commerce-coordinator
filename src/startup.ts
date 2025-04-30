@@ -1,5 +1,5 @@
 import subscribeDirectMessages from "@/modules/direct-messages/subscribeDirectMessages";
-import synchronizeProducts from "@/modules/product/synchronizeProducts";
+import synchronizeProducts from "@/modules/products/synchronizeProducts";
 import { Queue, QueueRegistry } from "./queues/Queue";
 import getDb from "./services/dbService";
 import { ignoredEventIds } from "./utils/shouldIgnoreEvent";
