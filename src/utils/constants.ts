@@ -27,12 +27,6 @@ export const merchantMessagesFilter: NDKFilter = {
     '#p': [pubkey!]
 }
 
-export const invoiceWebhookDetails = {
-    port: 3333,
-    path: "/webhook/invoice",
-    method: "POST"
-}
-
 export const ORDER_STATUS = {
     PENDING: "pending",
     CONFIRMED: "confirmed",
