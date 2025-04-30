@@ -16,6 +16,7 @@ export async function orderEventHandler(queueItem: QueueItem<{ order: Order, cus
         // TODO: Check order-id against all Receipt events, and if it's already been processed, ignore it in the future. An order may make it this far if the database was previously wiped, or some orders have been processed outside of the Coorindator.
 
         const processOrderResult = await processOrder(order, customerPubkey);
+
         if (!processOrderResult?.success) {
             const failedOrderMessageObj = {
                 recipient: customerPubkey,

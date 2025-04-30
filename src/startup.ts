@@ -15,6 +15,7 @@ function verifyEnvVars(): void {
     if (!process.env.PUBKEY || !process.env.PRIVKEY) throw new Error(`[subscribeDirectMessages]: PUBKEY or PRIVKEY not found in .env`);
     if (!process.env.STRIKE_API_KEY) throw new Error(`[subscribeDirectMessages]: STRIKE_API_KEY not found in .env`);
     if (!process.env.USPS_CLIENT_ID || !process.env.USPS_CLIENT_SECRET) throw new Error(`[subscribeDirectMessages]: USPS_CLIENT_ID and USPS_CLIENT_SECRET are both required environment variables.`);
+    if (!process.env.SHIPSTATION_API_KEY || !process.env.SHIPSTATION_API_SECRET) throw new Error(`[subscribeDirectMessages]: SHIPSTATION_API_KEY and SHIPSTATION_API_SECRET are both required environment variables.`);
 
     if (isDebugMode()) {
         // TODO: Swap out these DEBUG_MOD_CONTROLS with a sandbox mode that mocks the network, instead. Leaving here for now during early development.
