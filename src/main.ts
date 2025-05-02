@@ -1,3 +1,4 @@
-import startup from './startup'
+import Coordinator from '.'
 
-await startup()
+Coordinator.init()
+Coordinator.start()

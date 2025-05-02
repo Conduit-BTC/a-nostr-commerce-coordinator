@@ -9,8 +9,14 @@ import {
   type ShippingOption
 } from 'nostr-commerce-schema'
 
-export default async function synchronizeShippingOptions() {
-  console.log('[synchronizeShippingOptions]: Synchronizing shipping options...')
+const Shipping = {
+  init: async () => start()
+} as const
+
+export default Shipping
+
+async function start() {
+  console.log('[Shipping.start]: Synchronizing shipping options...')
 
   const ndk = await getNdk()
 
@@ -18,12 +24,10 @@ export default async function synchronizeShippingOptions() {
   const shippingOptionsDb = getDb().openDB({ name: DB_NAME.SHIPPING_OPTIONS })
 
   console.log(
-    '[synchronizeShippingOptions]: Clearing out the shipping option events database...'
+    '[Shipping.start]: Clearing out the shipping option events database...'
   )
   shippingOptionsDb.clearSync() // Clear out the DB, get ready for a fresh sync
-  console.log(
-    '[synchronizeShippingOptions]: Shipping option events database cleared'
-  )
+  console.log('[Shipping.start]: Shipping option events database cleared')
 
   const referenceStrings = [
     ...productsDb
@@ -38,10 +42,7 @@ export default async function synchronizeShippingOptions() {
   referenceStrings.forEach(async (ref: string) => {
     const id = ref.split(':')[2]
     if (!id) {
-      console.error(
-        '[synchronizeShippingOptions]: Malformed ShippingOption: ',
-        ref
-      )
+      console.error('[Shipping.start]: Malformed ShippingOption: ', ref)
       return
     }
     const event = await ShippingOptionUtils.fetchShippingOptionEvent(
@@ -59,7 +60,5 @@ export default async function synchronizeShippingOptions() {
     )
   })
 
-  console.log(
-    '[synchronizeShippingOptions]: Initial shipping options sync complete!'
-  )
+  console.log('[Shipping.start]: Initial shipping options sync complete!')
 }

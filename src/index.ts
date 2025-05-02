@@ -1,15 +1,22 @@
-import subscribeDirectMessages from '@/modules/direct-messages/subscribeDirectMessages'
-import synchronizeProducts from '@/modules/products/synchronizeProducts'
 import { Queue, QueueRegistry } from './queues/Queue'
 import getDb from './services/dbService'
 import { ignoredEventIds } from './utils/shouldIgnoreEvent'
 import { dmQueueConfig, orderQueueConfig } from './queues'
 import type { Order } from 'nostr-commerce-schema'
 import type { NostrEvent } from '@nostr-dev-kit/ndk'
-import isDebugMode, { DEBUG_CTRL } from '../dev/utils/debugModeControls'
+import isDebugMode from '../dev/utils/debugModeControls'
 import { DB_NAME } from './utils/constants'
-import { startWebhookServer } from './services/webhook-server/startServer'
-import synchronizeShippingOptions from './modules/shipping-options/synchronizeShippingOptions'
+import Products from '@/modules/products'
+import Shipping from './modules/shipping'
+import DirectMessages from '@/modules/direct-messages'
+import WebhookServer from './modules/webhooks'
+
+const Coordinator = {
+  init: () => init(),
+  start: async () => await start()
+} as const
+
+export default Coordinator
 
 // TODO: All env vars must be moved out of the Coordinator. Some form of remote-hosted NSEC Bunker API will receive all sign & decrypt requests from the Coordinator, and a Secrets Manager will be used for the non-NSEC env vars.
 
@@ -116,23 +123,22 @@ function initIgnoredEvents(): void {
     .forEach((key) => ignoredEventIds.add(key.toString().split(':')[1]))
 }
 
-export default async function startup(): Promise<void> {
+function init(): void {
+  verifyEnvVars(requiredEnvVars, debugFlags)
+  initSettings()
+  initQueues()
+  initIgnoredEvents()
+}
+
+async function start(): Promise<void> {
   try {
-    console.log('⚡⚡⚡ Commerce Coordinator starting up... ⚡⚡⚡')
-
-    verifyEnvVars(requiredEnvVars, debugFlags)
-    initSettings()
-    initQueues()
-    initIgnoredEvents()
-
-    // TODO: Fetch Receipt events from the Relay Pool and store them in the database
-
-    startWebhookServer()
-    await synchronizeProducts()
-    await synchronizeShippingOptions()
-    await subscribeDirectMessages()
+    WebhookServer.start()
+    await Products.init()
+    await Shipping.init()
+    await DirectMessages.init()
+    // await Receipts.init()
   } catch (error) {
-    console.error(`Startup failed: ${error}`)
+    console.error(`[Coordinator]: Start failed: ${error}`)
     process.exit(1)
   }
 }

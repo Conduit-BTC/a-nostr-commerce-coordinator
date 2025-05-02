@@ -2,13 +2,19 @@ import { processPayment } from '@/modules/payments/processPayment'
 import { getStrikeInvoiceDetails } from '@/modules/payments/providers/StrikePaymentProvider'
 import { INVOICE_STATUS } from '@/utils/constants'
 
-export const invoiceWebhookDetails = {
+const WebhookServer = {
+  start: () => start()
+} as const
+
+export default WebhookServer
+
+const invoiceWebhookDetails = {
   port: 3333,
   path: '/webhook/invoice',
   method: 'POST'
 }
 
-export function startWebhookServer() {
+function start() {
   const { port, path, method } = invoiceWebhookDetails
   const server = Bun.serve({
     port,
@@ -26,7 +32,7 @@ export function startWebhookServer() {
   console.log(`[startServer]: Invoice webhook running on ${server.url}`)
 }
 
-export async function handleInvoiceWebhook(req: Request): Promise<void> {
+async function handleInvoiceWebhook(req: Request): Promise<void> {
   try {
     // The API sending the webhook expects a 200 response; otherwise, it will retry sending the webhook.
     console.log(
