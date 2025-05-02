@@ -25,7 +25,6 @@
 // THEN an HTTP server is created
 // THEN an endpoint at PORT is available
 
-
 // -- Webhook server
 // WHEN a request is sent to the webhook endpoint
 // GIVEN body.data.entityId is a string

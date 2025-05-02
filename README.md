@@ -6,6 +6,7 @@ THIS IS A WORK IN PROGRESS > Subscribe to our newsletter for updates about Condu
 Learn more about NCCs by reading their debut article: Nostr E-Commerce - Benefits, Shortcomings, and The Case for Coordinators
 
 ### GammaMarkets Spec - a Nostr Extension Possibility (NEP)
+
 Together with a team of other rockstar Nostr marketplace devs, we've aligned our daemon with the GammaMarkets Market Spec, for maximum interoperability between clients. See the spec at https://github.com/GammaMarkets/market-spec
 
 ### What is an NCC?
@@ -30,4 +31,3 @@ To summarize the benefits of an NCC:
 - Separation of Checkout-related direct messages (containing ugly JSON) from actual human readable direct messages,
 - General separation-of-concerns between Merchant's social graph and e-commerce activities
 - Ability to implement additional commerce features, such as metrics collection, financial statements, subscriptions, and much more yet-to-be explored possibilities
-

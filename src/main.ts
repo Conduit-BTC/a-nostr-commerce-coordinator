@@ -1,3 +1,3 @@
-import startup from "./startup";
+import startup from './startup'
 
-await startup();
+await startup()
