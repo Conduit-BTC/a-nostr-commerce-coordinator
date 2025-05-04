@@ -10,12 +10,12 @@ import {
 } from 'nostr-commerce-schema'
 
 const Shipping = {
-  init: async () => start()
+  subscribe: async () => subscribe()
 } as const
 
 export default Shipping
 
-async function start() {
+async function subscribe() {
   console.log('[Shipping.start]: Synchronizing shipping options...')
 
   const ndk = await getNdk()

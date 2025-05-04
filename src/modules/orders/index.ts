@@ -3,7 +3,7 @@ import {
   ProductListingUtils,
   type Order
 } from 'nostr-commerce-schema'
-import { getProduct } from '../products/getProduct'
+import Products from '../products'
 import { createInvoice } from '@/modules/payments/createInvoice'
 import { sendPaymentRequestMessage } from '@/modules/direct-messages/directMessageUtils'
 import { DEBUG_CTRL } from 'dev/utils/debugModeControls'
@@ -24,6 +24,11 @@ import {
 } from '@/utils/constants'
 import { exposeForTesting } from '@/utils/exposeForTesting'
 import { getVariableShippingCost } from '@/modules/fulfillments/getVariableShippingCost'
+
+const Order = {
+  process: (event: Order, customerPubkey: string) =>
+    processOrder(event, customerPubkey)
+} as const
 
 export default async function processOrder(
   event: Order,
@@ -97,8 +102,9 @@ async function createTransaction(
   customerPubkey: string
 ): Promise<CreateTransactionResponse> {
   const items: OrderItem[] = OrderUtils.getOrderItems(order)
-  const { transactionItems, missingItems } =
-    await prepareTransactionItems(items)
+  const { transactionItems, missingItems } = await prepareTransactionItems(
+    items
+  )
   const orderId = OrderUtils.getOrderId(order)
 
   // Right now, we're failing the order if any Products cannot be located in the database, home relay, or relay pool. Later, we'll gracefully handle this by contacting the Customer to ask if they'd like to proceed without those items.
@@ -179,16 +185,14 @@ async function createTransaction(
   return { success: true, transaction }
 }
 
-async function prepareTransactionItems(
-  orderItems: OrderItem[]
-): Promise<{
+async function prepareTransactionItems(orderItems: OrderItem[]): Promise<{
   transactionItems: TransactionProduct[]
   missingItems: TransactionProduct[]
 }> {
   const itemPromises: Promise<TransactionProduct>[] = orderItems.map(
     async (item) => {
       const productId = OrderUtils.getProductIdFromOrderItem(item)
-      const product = await getProduct(productId)
+      const product = await Products.getOne(productId)
 
       if (!product)
         return {
@@ -241,7 +245,11 @@ function validateTransaction(transaction: Transaction): ProcessOrderResponse {
       stockCheckErrors.push({
         success: false,
         error: CHECKOUT_ERROR.INSUFFICIENT_STOCK,
-        messageToCustomer: `Issue with your order: "${ProductListingUtils.getProductTitle(item.product!)}" has only ${stock} in stock, but you ordered ${item.quantity}. Please update your order and try again.`
+        messageToCustomer: `Issue with your order: "${ProductListingUtils.getProductTitle(
+          item.product!
+        )}" has only ${stock} in stock, but you ordered ${
+          item.quantity
+        }. Please update your order and try again.`
       })
     return true
   })
@@ -294,7 +302,9 @@ async function finalizeTransaction(
     .put(transaction.payment!.details.invoiceId, orderId)
 
   console.log(
-    `[finalizeTransaction]: Transaction saved to Processing Orders DB under key ${orderId}. Indexed by invoice ID ${transaction.payment!.details.invoiceId}`
+    `[finalizeTransaction]: Transaction saved to Processing Orders DB under key ${orderId}. Indexed by invoice ID ${
+      transaction.payment!.details.invoiceId
+    }`
   )
 
   if (DEBUG_CTRL.SUPPRESS_OUTBOUND_MESSAGES)

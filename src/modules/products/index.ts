@@ -6,13 +6,13 @@ import { DB_NAME } from '@/utils/constants'
 import { type ProductListing } from 'nostr-commerce-schema'
 
 const Products = {
-  init: async () => start(),
+  subscribe: async () => subscribe(),
   getOne: async (productId: string) => getProduct(productId)
 } as const
 
 export default Products
 
-async function start() {
+async function subscribe() {
   console.log('[Products.start]: Synchronizing products...')
 
   const filter = merchantProductsFilter
