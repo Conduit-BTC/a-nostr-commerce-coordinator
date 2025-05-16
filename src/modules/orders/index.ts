@@ -30,7 +30,9 @@ const Order = {
     processOrder(event, customerPubkey)
 } as const
 
-export default async function processOrder(
+export default Order
+
+async function processOrder(
   event: Order,
   customerPubkey: string
 ): Promise<ProcessOrderResponse> {

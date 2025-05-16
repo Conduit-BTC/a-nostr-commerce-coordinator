@@ -1,0 +1,33 @@
+graph TD
+    %% Categories
+    subgraph domain/
+        Orders
+        Products
+        Payments
+        Receipts
+        Fulfillment
+        Shipping
+    end
+
+    subgraph nostr-events/
+        NESubscriber
+        NEDecrypter
+        NESigner
+        NEEmitter
+    end
+
+    subgraph infra/
+        Database
+        Queue
+        Webhooks
+    end
+
+    subgraph config/
+        Settings
+    end
+
+    subgraph external
+        RelayPool
+        PaymentSystem
+        ShippingProvider
+    end

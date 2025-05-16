@@ -1,0 +1,26 @@
+graph TD
+    %% Style improvements
+    classDef relay fill:#dcd6f7,stroke:#6c5ce7,color:#000,font-size:12px;
+    classDef events fill:#ffeaa7,stroke:#e17055,color:#000,font-size:12px;
+    classDef domain fill:#a3f7bf,stroke:#00b894,color:#000,font-size:12px;
+    classDef infra fill:#fab1a0,stroke:#d63031,color:#000,font-size:12px;
+
+    %% Relay Input
+    RelayPoolIn[«RelayPool»]:::relay -->|NIP-17 DMs| NESubscriber[«NESubscriber»<br/>filters, dedupes]:::events
+
+    %% Decryption path
+    NESubscriber --> NEDecrypter[«NEDecrypter»<br/>decrypts DM]:::events
+    NEDecrypter --> Orders[«Orders»<br/>validates + coordinates]:::domain
+
+    %% Validation dependencies
+    Products[«Products»<br/>lookup + verify]:::domain --> Orders
+    Payments[«Payments»<br/>generates invoice]:::domain --> Orders
+
+    %% Emit back
+    Orders --> NEEmitter[«NEEmitter»<br/>constructs response]:::events
+    NEEmitter --> NESigner[«NESigner»<br/>signs with keys]:::events
+    NESigner -->|Encrypted NIP-17 DM| RelayPoolOut[«RelayPool»]:::relay
+
+    %% Side effects
+    Orders --> Receipts[«Receipts»<br/>record issuance]:::domain
+    Orders --> Queue[«Queue»<br/>wait for Webhook Confirm]:::infra

@@ -1,13 +1,13 @@
-import { OrderUtils, type Order } from 'nostr-commerce-schema'
+import { OrderUtils, type Order as OrderEventType } from 'nostr-commerce-schema'
 import { type QueueItem } from '../Queue'
-import processOrder from '@/modules/orders'
 import { outputAllStoresToConsole } from 'dev/utils/outputAllStoresToConsole'
 import { DEBUG_CTRL } from 'dev/utils/debugModeControls'
 import { ORDER_MESSAGE_TYPE, ORDER_STATUS } from '@/utils/constants'
 import { sendOrderStatusUpdateMessage } from '@/modules/direct-messages/directMessageUtils'
+import Order from '@/modules/orders'
 
 export async function orderEventHandler(
-  queueItem: QueueItem<{ order: Order; customerPubkey: string }>
+  queueItem: QueueItem<{ order: OrderEventType; customerPubkey: string }>
 ) {
   try {
     console.log('[orderEventHandler]: Processing order event from queue...')
@@ -17,7 +17,7 @@ export async function orderEventHandler(
 
     // TODO: Check order-id against all Receipt events, and if it's already been processed, ignore it in the future. An order may make it this far if the database was previously wiped, or some orders have been processed outside of the Coorindator.
 
-    const processOrderResult = await processOrder(order, customerPubkey)
+    const processOrderResult = await Order.process(order, customerPubkey)
 
     if (!processOrderResult?.success) {
       const failedOrderMessageObj = {

@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    participant Main
+    participant NESubscriber
+    participant NEDecrypter
+    participant Orders
+    participant Schema
+    participant Products
+    participant Payments
+    participant NEEmitter
+    participant NESigner
+    participant RelayPool
+
+    Main->>NESubscriber: Subscribe to NIP-17 DMs
+    NESubscriber->>NESubscriber: Construct filters using ignore list
+    NESubscriber->>NEDecrypter: Receive encrypted DM event
+    NEDecrypter->>Orders: Decrypt and pass Order payload
+    Orders->>Schema: Validate Order 
+    Orders->>Products: Validate Product references
+
+    alt Invalid Product or Order
+        Products-->>Orders: Invalid
+        Orders->>NEEmitter: Compose error message
+        NEEmitter->>NESigner: Sign message
+        NESigner->>RelayPool: Publish to customer
+        Orders->>NESubscriber: Add event ID to ignore list
+    else Valid Order
+        Products-->>Orders: Valid
+        Orders->>Payments: Generate payment invoice
+        Payments-->>Orders: Invoice object
+        Orders->>NEEmitter: Compose payment request
+        NEEmitter->>NESigner: Sign message
+        NESigner->>RelayPool: Publish invoice
+        Orders->>Orders: Store Order in memory (awaiting webhook)
+    end

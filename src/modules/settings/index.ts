@@ -2,6 +2,16 @@ import getDb from '@/services/dbService'
 import { DB_NAME } from '@/utils/constants'
 import isDebugMode from 'dev/utils/debugModeControls'
 
+/**
+ * Before the Coordinator starts, the following details must be set by the Merchant, and/or the Merchant must be explicitly informed of the implications of not setting optional values:
+ *
+ * - Shipping origin zip code. Required for variable shipping cost calculation
+ * - Shipping outbound address. Required for variable shipping cost calculation.
+ * - Package specifications. Required for variable shipping cost calculation.
+ *
+ * See type: MerchantSettings
+ */
+
 const Settings = {
   init: () => init()
 } as const
@@ -27,15 +37,6 @@ const debugFlags = [
   'SUPPRESS_OUTBOUND_MESSAGES'
 ]
 
-/**
- * Before the Coordinator starts, the following details must be set by the Merchant, and/or the Merchant must be explicitly informed of the implications of not setting optional values:
- *
- * - Shipping origin zip code. Required for variable shipping cost calculation
- * - Shipping outbound address. Required for variable shipping cost calculation.
- * - Package specifications. Required for variable shipping cost calculation.
- *
- * See type: MerchantSettings
- */
 function init(): void {
   // TODO: Perform a verification: Are there any ProductListings with dimensions that are larger than all available MerchantPackageSpecs? If so, notify the Merchant. Otherwise, the variable shipping price calculator will throw at generatePackages().
   console.error(
