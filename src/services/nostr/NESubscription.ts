@@ -1,3 +1,6 @@
+import type NDK from "@nostr-dev-kit/ndk";
+import type { NDKEvent, NDKSubscription } from "@nostr-dev-kit/ndk";
+
 export class NESubscription {
   subscription: NDKSubscription;
 

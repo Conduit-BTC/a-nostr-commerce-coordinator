@@ -5,7 +5,7 @@ const relayPool = Defaults.RELAYS;
 
 const Config = {
   relayPool,
-  NostrService: createNostrService(relayPool),
+  NostrService: await createNostrService(relayPool),
 } as const;
 
 export default Config;

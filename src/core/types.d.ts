@@ -1,38 +1,28 @@
-/// <reference types="vite/client" />
-
-import type NCCService from "./NCCService";
-
-export {};
+import type NCCService from '@/core/base-classes/NCCService'
+import type Config from '@/config'
+import type { EventBus } from '@/events/NCCEventBus'
 
 declare global {
-  type NCCLoader = ({
-    container,
-  }: {
-    container: NCCModuleContainer;
-  }) => Promise<void>;
-  type NCCService = typeof NCCService;
-
-  interface NCCModuleContainer {
-    config: typeof import("@/config").default;
-    service: NCCService;
-    models: Record<string, any>;
+  interface NCCModule<TService = NCCService> {
+    name: string
+    container: NCCModuleContainer<TService>
+    loaders?: NCCLoader[]
+    lazyLoaders?: NCCLoader[]
   }
 
-  interface NCCModule {
-    name: string;
-    loaders: NCCLoader[];
-    lazyLoaders: NCCLoader[];
-    service: NCCService;
-    container: NCCModuleContainer;
+  type NCCLoader<TService = NCCService> = (args: {
+    container: NCCModuleContainer<TService>
+  }) => Promise<void>
+
+  interface NCCModuleContainer<TService> {
+    config: typeof Config
+    eventBus: typeof EventBus
+    models: Record<string, any>
+    service: TService
   }
 
-  interface ImportMeta {
-    glob<T = unknown>(
-      pattern: string,
-      options?: {
-        eager?: boolean;
-        import?: string;
-      }
-    ): Record<string, T>;
+  interface NCCAppContainer {
+    modules: Record<string, NCCModule>
+    eventBus: typeof EventBus
   }
 }
