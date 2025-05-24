@@ -57,9 +57,10 @@ export default class DirectMessagesService extends NCCService<DirectMessagesServ
 
       // Order processing and status
       case 16:
+        // TODO: Add to ignored events {eventId, reason: "SEEN"}
         eventBus.emit(EventNames.ORDER_REQUEST_RECEIVED, {
-          event,
-          order: rumor
+          ndkEvent: event,
+          orderEvent: rumor
         })
         break
 

@@ -11,8 +11,8 @@ export type NCCEventName = (typeof EventNames)[keyof typeof EventNames]
 export type NCCEventPayloads = {
   [EventNames.NOSTR_DM_RECEIVED]: { event: NDKEvent; rumor: NostrEvent }
   [EventNames.ORDER_REQUEST_RECEIVED]: {
-    event: NDKEvent
-    order: NostrEvent
+    ndkEvent: NDKEvent
+    orderEvent: NostrEvent
   }
   [EventNames.ORDER_CREATED]: { orderId: string }
 }

@@ -1,5 +1,5 @@
 import { NCCSubscription } from '@/core/base-classes/NCCSubscription'
-import { EventBus } from '@/events/NCCEventBus'
+import type { EventBus } from '@/events/NCCEventBus'
 import { EventNames } from '@/events/NCCEvents'
 import { OrdersModuleName } from '@/modules/orders'
 import type OrdersService from '@/modules/orders/service'
@@ -7,7 +7,6 @@ import type { OrdersModule } from '@/modules/orders/types'
 
 export default class OrderRequestReceivedSubscription extends NCCSubscription {
   constructor(container: NCCAppContainer) {
-    console.log('Container: ', Object.keys(container))
     super(container)
   }
 
@@ -21,22 +20,31 @@ export default class OrderRequestReceivedSubscription extends NCCSubscription {
       }
     }
 
-    EventBus.on(EventNames.ORDER_REQUEST_RECEIVED, async ({ event, order }) => {
-      const validatedOrder = await orderService.validate(order)
+    eventBus.on(
+      EventNames.ORDER_REQUEST_RECEIVED,
+      async ({ ndkEvent, orderEvent }) => {
+        const orderValidationStatus = await orderService.validate(orderEvent)
 
-      if (!validatedOrder.success) {
-        // TODO: Instead of rejecting non-spec orders, move the Order to a manual flow where the Merchant can review the order and decide whether to accept or reject it.
-        console.log('Invalid order')
-        orderService.reject({ event, order })
-        return
+        if (!orderValidationStatus.success) {
+          console.log('Invalid order: ', ndkEvent.id)
+          orderService.reject({
+            ndkEvent,
+            orderEvent,
+            reason:
+              JSON.stringify(orderValidationStatus.error) || 'Validation error'
+          })
+          return
+        }
+
+        console.log('Received order: ', orderEvent)
+
+        // Create order object
+        // Save order with CREATED status
+        // Generate Payment Request
+        // Send Payment Request
+        // Update transaction with PENDING_PAYMENT status and payment information
       }
-
-      // Create transaction
-      // Save transaction with CREATED status
-      // Generate Payment Request
-      // Send Payment Request
-      // Update transaction with PENDING_PAYMENT status and payment information
-    })
+    )
   }
 
   static override eventNames() {

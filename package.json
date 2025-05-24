@@ -1,6 +1,6 @@
 {
   "name": "a-commerce-coordinator",
-  "module": "index.ts",
+  "module": "main.ts",
   "scripts": {
     "dev": "bun --watch ./src/main.ts",
     "test": "BUN_ENV=test bun test"
