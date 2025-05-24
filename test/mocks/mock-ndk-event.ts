@@ -1,23 +1,23 @@
-import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { NDKEvent } from '@nostr-dev-kit/ndk'
 
 export function createMockNostrEvent(
   partial: Partial<NDKEvent> = {}
 ): NDKEvent {
-  const mock = new NDKEvent() as NDKEvent;
+  const mock = new NDKEvent() as NDKEvent
 
   // Fill in minimal valid fields for what your code actually uses
   Object.assign(mock, {
-    id: "mock-id",
+    id: 'mock-id',
     kind: 4,
-    pubkey: "mock-pubkey",
-    content: "mock-content",
+    pubkey: 'mock-pubkey',
+    content: 'mock-content',
     created_at: Date.now(),
-    sig: "mock-sig",
+    sig: 'mock-sig',
     tags: [],
-    ...partial,
-  });
+    ...partial
+  })
 
-  return mock;
+  return mock
 }
 
 export function createMockOrderEvent() {}

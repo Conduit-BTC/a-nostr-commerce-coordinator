@@ -1,35 +1,35 @@
-import type { NDKFilter, NDKKind } from "@nostr-dev-kit/ndk";
+import type { NDKFilter, NDKKind } from '@nostr-dev-kit/ndk'
 
 export const NEFilters = {
   ProductListingFilter({ pubkey }: { pubkey: string }): NDKFilter {
     return {
       kinds: [30402 as NDKKind],
-      authors: [pubkey!],
-    };
+      authors: [pubkey!]
+    }
   },
   merchantShippingOptionsFilter({ pubkey }: { pubkey: string }): NDKFilter {
     return {
       kinds: [30402 as NDKKind],
-      authors: [pubkey!],
-    };
+      authors: [pubkey!]
+    }
   },
   getMerchantSpecificProductFilter({
     pubkey,
-    productId,
+    productId
   }: {
-    pubkey: string;
-    productId: string;
+    pubkey: string
+    productId: string
   }): NDKFilter {
     return {
       kinds: [30402 as NDKKind],
       authors: [pubkey!],
-      "#d": [productId],
-    };
+      '#d': [productId]
+    }
   },
   merchantMessagesFilter({ pubkey }: { pubkey: string }): NDKFilter {
     return {
       kinds: [1059 as NDKKind],
-      "#p": [pubkey!],
-    };
-  },
-};
+      '#p': [pubkey!]
+    }
+  }
+}
