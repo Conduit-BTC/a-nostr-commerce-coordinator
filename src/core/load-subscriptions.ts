@@ -5,6 +5,7 @@ import fs from 'fs/promises'
  * Traverses src/subscriptions and loads each
  */
 export async function loadSubscriptions(container: NCCAppContainer) {
+  console.log('[load-subscriptions] > Loading subscriptions...')
   const subDir = path.resolve(__dirname, '../subscriptions')
   const files = await fs.readdir(subDir)
 
@@ -16,4 +17,5 @@ export async function loadSubscriptions(container: NCCAppContainer) {
       instance.subscribe()
     }
   }
+  console.log('[load-subscriptions] > Subscriptions loaded.')
 }

@@ -1,8 +1,7 @@
-// test/NESubscription.test.ts
 import { describe, expect, it, spyOn } from 'bun:test'
 import type { NDKSubscription } from '@nostr-dev-kit/ndk'
 import type NDK from '@nostr-dev-kit/ndk'
-import { NESubscription } from './NESubscription'
+import type { NostrService } from './NostrService'
 
 describe('NESubscription', () => {
   it('subscribes with the provided filter and options', () => {
@@ -14,30 +13,42 @@ describe('NESubscription', () => {
       subscribe: () => fakeSubscription
     } as unknown as NDK
 
-    const subscribeSpy = spyOn(ndk, 'subscribe')
+    const nostrService = {
+      getNDK: () => ndk,
+      createSubscriber: () => fakeSubscription
+    } as unknown as NostrService
+
+    const subscribeSpy = spyOn(nostrService, 'createSubscriber')
 
     const filter = { kinds: [1], authors: ['pubkey'] }
     const options = { closeOnEose: true }
 
-    const sub = new NESubscription({ ndk, filter, options })
+    const sub = nostrService.createSubscriber({ filter, options })
 
-    expect(subscribeSpy).toHaveBeenCalledWith(filter, options)
-    expect(sub.subscription).toBe(fakeSubscription)
+    expect(subscribeSpy).toHaveBeenCalledWith({ filter, options })
   })
 
   it('attaches event listeners to the subscription', () => {
     const onSpy = function () {} as unknown as NDKSubscription['on']
-    const subscription = {
+
+    const fakeSubscription = {
       on: onSpy
     } as unknown as NDKSubscription
 
-    const onSpyReal = spyOn(subscription, 'on')
+    const onSpyReal = spyOn(fakeSubscription, 'on')
 
     const ndk = {
-      subscribe: () => subscription
+      subscribe: () => fakeSubscription
     } as unknown as NDK
 
-    const sub = new NESubscription({ ndk, filter: { kinds: [1] } })
+    const nostrService = {
+      getNDK: () => ndk,
+      createSubscriber: () => fakeSubscription
+    } as unknown as NostrService
+
+    const subscribeSpy = spyOn(nostrService, 'createSubscriber')
+
+    const sub = nostrService.createSubscriber({ filter: { kinds: [1] } })
 
     const eventListener = () => {}
     const eoseListener = () => {}

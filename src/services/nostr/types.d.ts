@@ -1,4 +1,3 @@
-// src/types/nostr-events.d.ts
 import type {
   NDK,
   NDKEvent,

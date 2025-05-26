@@ -1,7 +1,7 @@
 import { NCCSubscription } from '@/core/base-classes/NCCSubscription'
 import type { EventBus } from '@/events/NCCEventBus'
 import { EventNames } from '@/events/NCCEvents'
-import { OrdersModuleName } from '@/modules/orders'
+import { ModuleName } from '@/modules/orders'
 import type OrdersService from '@/modules/orders/service'
 import type { OrdersModule } from '@/modules/orders/types'
 
@@ -13,7 +13,7 @@ export default class OrderRequestReceivedSubscription extends NCCSubscription {
   subscribe() {
     const {
       container: { eventBus, service: orderService }
-    } = this.getModule<OrdersModule>(OrdersModuleName) as {
+    } = this.getModule<OrdersModule>(ModuleName) as {
       container: {
         eventBus: typeof EventBus
         service: OrdersService

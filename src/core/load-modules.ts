@@ -1,14 +1,8 @@
 import path from 'path'
 import { readdir, stat } from 'fs/promises'
-import { fileURLToPath } from 'url'
 import type Config from '@/config'
 import type { EventBus } from '@/events/NCCEventBus'
-
-/**
- * Traverses src/modules and loads each
- */
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const modulesDir = path.resolve(__dirname, '../modules')
+import { postgresPersistenceFactory } from '@/services/postgres'
 
 export async function loadModules({
   config,
@@ -16,10 +10,11 @@ export async function loadModules({
 }: {
   config: typeof Config
   eventBus: typeof EventBus
-}): Promise<NCCModule[]> {
+}): Promise<NCCModule<any>[]> {
   console.log('[load-modules] -> Loading modules...')
+  const modulesDir = path.resolve(__dirname, '../modules')
   const moduleNames = await getSubdirectories(modulesDir)
-  const modules: NCCModule[] = []
+  const modules: NCCModule<any>[] = []
 
   for (const name of moduleNames) {
     const base = path.join(modulesDir, name)
@@ -29,12 +24,11 @@ export async function loadModules({
         container: NCCModuleContainer<any>
         loaders?: NCCLoader[]
         lazyLoaders?: NCCLoader[]
-      }) => NCCModule
+        persistence: Record<string, any> // Type can be improved
+      }) => NCCModule<any>
     >(`${base}/index.ts`)
 
     const ServiceClass = await importDefault<any>(`${base}/service.ts`)
-    if (!ServiceClass) throw new Error(`Missing service for module "${name}"`)
-
     const models = await importAllExports(`${base}/models`)
     const loaders = await importAllDefaults(`${base}/loaders`)
     const lazyLoaders = await importAllDefaults(`${base}/loaders/lazy`)
@@ -43,24 +37,33 @@ export async function loadModules({
       config,
       eventBus,
       models,
-      service: {} as any // temporary stub to satisfy types
+      service: {} as any
+    }
+
+    const persistence: Record<string, any> = {}
+    for (const modelName in models) {
+      const schema = models[modelName]
+      persistence[modelName] = postgresPersistenceFactory({
+        modelName,
+        schema,
+        moduleName: name,
+        dbPath: '' // now unused
+      })
     }
 
     const service = new ServiceClass({ container })
-
     container.service = service
 
     const mod = createModule({
       container,
       loaders,
-      lazyLoaders
+      lazyLoaders,
+      persistence
     })
-
-    console.log('[load-modules] > Module loaded: ', mod.name)
+    container.module = mod
     modules.push(mod)
   }
 
-  console.log('[load-modules] -> All modules loaded')
   return modules
 }
 

@@ -1,9 +1,38 @@
 import NCCService from '@/core/base-classes/NCCService'
 import type { NDKEvent, NostrEvent } from '@nostr-dev-kit/ndk'
-import { validateOrder as NCSValidateOrder } from 'nostr-commerce-schema'
+import {
+  validateOrder as NCSValidateOrder,
+  OrderUtils,
+  type Order
+} from 'nostr-commerce-schema'
+import type { OrdersModule } from '.'
 
-export default class OrdersService extends NCCService<OrdersService> {
-  async create(order: NostrEvent) {}
+export default class OrdersService extends NCCService<
+  OrdersService,
+  OrdersModule
+> {
+  async create(orderEvent: NostrEvent): Promise<void> {
+    const result = await this.validate(orderEvent)
+
+    if (!result.success) {
+      throw new Error('Order is invalid')
+    }
+
+    const orderId = OrderUtils.getOrderId(orderEvent as unknown as Order)
+
+    await this.module.persistence.order.create(orderId!, {
+      ...result.data,
+      event: orderEvent
+    })
+  }
+
+  async get(orderId: string) {
+    return this.module.persistence.order.get(orderId)
+  }
+
+  async list() {
+    return this.module.persistence.order.list()
+  }
 
   async validate(order: NostrEvent) {
     return NCSValidateOrder(order)
