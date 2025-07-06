@@ -1,6 +1,8 @@
 import type { NDKFilter, NDKKind } from '@nostr-dev-kit/ndk'
 
-export const DEFAULT_RELAYS = ['ws://localhost:7777']
+export const DEFAULT_RELAYS: string[] = process.env.RELAYS
+  ? process.env.RELAYS.split(',').map((s) => s.trim())
+  : ['wss://relay.conduit.market']
 
 export const pubkey = process.env.PUBKEY
 
