@@ -1,7 +1,7 @@
 import { getQueue } from '@/modules/queues/Queue'
 import getDb from '@/services/dbService'
 import { DB_NAME, QUEUE_NAME } from '@/utils/constants'
-import isDebugMode from 'dev/utils/debugModeControls'
+import isDebugMode from '@/dev/utils/debugModeControls'
 
 export function outputAllStoresToConsole() {
   if (!isDebugMode) return

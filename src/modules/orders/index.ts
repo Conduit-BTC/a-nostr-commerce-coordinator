@@ -6,7 +6,7 @@ import {
 import Products from '../products'
 import { createInvoice } from '@/modules/payments/createInvoice'
 import { sendPaymentRequestMessage } from '@/modules/direct-messages/directMessageUtils'
-import { DEBUG_CTRL } from 'dev/utils/debugModeControls'
+import { DEBUG_CTRL } from '@/dev/utils/debugModeControls'
 import getDb from '@/services/dbService'
 import {
   type CreateInvoiceResponse,

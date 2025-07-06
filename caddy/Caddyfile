@@ -1,0 +1,2 @@
+:{$PORT}
+reverse_proxy coordinator:3333 # name of Railway service for Coordinator

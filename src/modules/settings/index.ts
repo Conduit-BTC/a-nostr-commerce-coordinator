@@ -1,6 +1,6 @@
 import getDb from '@/services/dbService'
 import { DB_NAME } from '@/utils/constants'
-import isDebugMode from 'dev/utils/debugModeControls'
+import isDebugMode from '@/dev/utils/debugModeControls'
 
 /**
  * Before the Coordinator starts, the following details must be set by the Merchant, and/or the Merchant must be explicitly informed of the implications of not setting optional values:

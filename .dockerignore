@@ -1,0 +1,11 @@
+node_modules
+bun.lockb
+*.log
+dev/
+.git
+.gitignore
+Dockerfile
+dev.Dockerfile
+test/
+*.test.*
+.env* 

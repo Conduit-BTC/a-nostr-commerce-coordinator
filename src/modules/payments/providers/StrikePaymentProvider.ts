@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid'
-import { DEBUG_CTRL } from 'dev/utils/debugModeControls'
+import { DEBUG_CTRL } from '@/dev/utils/debugModeControls'
 import type {
   CreateInvoiceResponse,
   StrikeBaseInvoiceResponse,

@@ -3,6 +3,7 @@
   "module": "index.ts",
   "scripts": {
     "dev": "bun --watch ./src/main.ts",
+    "start": "./src/main.ts",
     "test": "BUN_ENV=test bun test"
   },
   "devDependencies": {
