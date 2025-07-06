@@ -97,8 +97,8 @@ export const DB_NAME = {
 } as const
 
 export const SIZE_UNIT = {
-  CENTIMETER: 'centimeter',
-  INCH: 'inch'
+  CENTIMETER: 'cm',
+  INCH: 'in'
 } as const
 
 export const WEIGHT_UNIT = {

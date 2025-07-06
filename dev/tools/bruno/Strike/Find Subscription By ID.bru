@@ -1,0 +1,19 @@
+meta {
+  name: Find Subscription By ID
+  type: http
+  seq: 4
+}
+
+get {
+  url: https://api.strike.me/v1/subscriptions/{{SUBSCRIPTION_ID}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{STRIKE_API_KEY}}
+}
+
+vars:post-response {
+  SUBSCRIPTION_ID: 
+} 

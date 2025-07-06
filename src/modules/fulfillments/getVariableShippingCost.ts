@@ -88,7 +88,7 @@ function createShippingCostQuotePayload(
   return {
     originZIPCode,
     destinationZIPCode,
-    weight: pkg.weight,
+    weight: pkg.weight || 1,
     length: pkg.length,
     width: pkg.width,
     height: pkg.height,

@@ -2,6 +2,7 @@ import getDb from '@/services/dbService'
 import { DB_NAME, PAYMENT_STATUS } from '@/utils/constants'
 import type { Transaction } from '@/types/types'
 import { sendReceiptMessage } from '@/modules/direct-messages/directMessageUtils'
+import { convertCurrency } from '@/utils/currencyConverter'
 
 export async function processPayment(invoiceId: string): Promise<void> {
   console.log(
@@ -26,10 +27,16 @@ export async function processPayment(invoiceId: string): Promise<void> {
     return
   }
 
+  console.log(
+    `[processPayment]: Sending receipt for invoice ID ${invoiceId} to customer: ${transaction.customerPubkey}`
+  )
+
+  const amountInSats = await convertCurrency(transaction.payment.amount, 'USD')
+
   sendReceiptMessage({
     recipient: transaction.customerPubkey,
     orderId,
-    amount: transaction.payment.amount.toString(),
+    amount: Math.round(amountInSats).toString(),
     lnInvoice: transaction.payment.details.lightningInvoice,
     lnPaymentHash: transaction.payment.details.invoiceId
   })
@@ -46,7 +53,6 @@ export async function processPayment(invoiceId: string): Promise<void> {
 function getTransactionFromInvoice(
   invoiceId: string
 ): Promise<{ transaction: Transaction; orderId: string } | null> {
-  console.log('INVOICE ID', invoiceId)
   const orderId = getDb()
     .openDB({ name: DB_NAME.PROCESSING_ORDERS_INVOICE_ID_INDEX })
     .get(invoiceId)

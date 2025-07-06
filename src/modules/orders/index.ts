@@ -138,11 +138,11 @@ async function createTransaction(
   )
   if (!street1)
     throw new Error(
-      `[processOrder > getVariableShippingCost]: There was an issue calculating variable shipping cost: No street address was provided.`
+      `[orders > createTransaction]: There was an issue calculating variable shipping cost: No street address was provided.`
     )
   if (!zip)
     throw new Error(
-      `[processOrder > getVariableShippingCost]: There was an issue calculating variable shipping cost: No zip code was provided.`
+      `[orders > createTransaction]: There was an issue calculating variable shipping cost: No zip code was provided.`
     )
 
   let variableShippingCost = true // TODO: <<< This is currently hard-coded. This will only work for Merchants that 100% always want variable shipping cost calculations. This is great for us, now, but must be updated when we're ready to release for other Merchants.
@@ -162,7 +162,7 @@ async function createTransaction(
     const a = await getVariableShippingCost(zip, transactionItems)
     if (a.error)
       throw new Error(
-        `[processOrder > getVariableShippingCost]: There was an issue calculating variable shipping cost. Status: ${a.error.status} - Message:${a.error.message}`
+        `[orders >]: There was an issue calculating variable shipping cost. Status: ${a.error.status} - Message:${a.error.message}`
       )
     shippingCost += a.cost!
   }

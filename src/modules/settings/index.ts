@@ -48,7 +48,7 @@ function init(): void {
   console.log('[startup] Merchant Settings:')
 
   const settingsDb = getDb().openDB({ name: DB_NAME.SETTINGS })
-  settingsDb.putSync('merchant_zip_code', 12345)
+  settingsDb.putSync('merchant_zip_code', '90046')
   settingsDb.getRange().forEach(({ key, value }) => {
     console.log(`> ${String(key)}: ${String(value)}`)
   })

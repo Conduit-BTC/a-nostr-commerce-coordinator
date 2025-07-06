@@ -1,0 +1,19 @@
+meta {
+  name: Delete Subscription
+  type: http
+  seq: 6
+}
+
+delete {
+  url: https://api.strike.me/v1/subscriptions/019588cc-153a-7db8-8fae-73f2508bba07
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{STRIKE_API_KEY}}
+}
+
+vars:post-response {
+  SUBSCRIPTION_ID: 
+}

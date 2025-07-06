@@ -1,0 +1,34 @@
+meta {
+  name: Update Subscription
+  type: http
+  seq: 5
+}
+
+patch {
+  url: https://api.strike.me/v1/subscriptions/{{SUBSCRIPTION_ID}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{STRIKE_API_KEY}}
+}
+
+body:json {
+  {
+    "webhookUrl": "{{WEBHOOK_URL}}:3333",
+    "webhookVersion": "v1", 
+    "secret": "{{STRIKE_INVOICE_WEBHOOK_SECRET}}",
+    "enabled": true,
+    "eventTypes": [
+      "invoice.created",
+      "invoice.updated",
+      "payment.created",
+      "payment.updated"
+    ]
+  }
+}
+
+vars:post-response {
+  SUBSCRIPTION_ID: 
+} 

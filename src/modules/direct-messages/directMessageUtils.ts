@@ -118,7 +118,7 @@ export async function sendPaymentRequestMessage({
     const event = await createNip17GiftWrapEvent(
       kind,
       recipient,
-      'Payment request',
+      '[Nostr Commerce Coordinator]: NIP-99 Payment Request',
       type,
       tags
     )
