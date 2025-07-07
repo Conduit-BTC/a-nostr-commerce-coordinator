@@ -1,9 +1,15 @@
-import { merchantProductsFilter } from '@/utils/constants'
+import {
+  getMerchantSpecificProductFilter,
+  merchantProductsFilter
+} from '@/utils/constants'
 import getDb from '@/services/dbService'
 import { getHomeRelaySet, getNdk, getRelayPool } from '@/services/ndkService'
 import { NDKRelaySet, type NDKEvent } from '@nostr-dev-kit/ndk'
 import { DB_NAME } from '@/utils/constants'
-import { type ProductListing } from 'nostr-commerce-schema'
+import {
+  validateProductListing,
+  type ProductListing
+} from 'nostr-commerce-schema'
 
 const Products = {
   subscribe: async () => subscribe(),

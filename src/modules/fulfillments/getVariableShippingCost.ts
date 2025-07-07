@@ -6,7 +6,6 @@ import type {
   TransactionProduct
 } from '@/types/types'
 import { getValueFromDb } from '@/utils/dbUtils'
-import { OrderUtils, ShippingOptionUtils } from 'nostr-commerce-schema'
 /**
  * Calculate shipping costs for a set of items to a zip code
  * @param {string} zip - Destination zip code
